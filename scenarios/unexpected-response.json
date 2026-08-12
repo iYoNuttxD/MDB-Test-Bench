@@ -1,0 +1,10 @@
+{
+  "id": "unexpected-response",
+  "name": "Unexpected Response",
+  "requiredProfile": "Level1",
+  "simulatorBehavior": "UnexpectedResponse",
+  "timeout": "00:00:10",
+  "steps": [
+    { "name": "RESET EXPECTED", "command": "Reset", "expectedResponse": "JustReset" }
+  ]
+}

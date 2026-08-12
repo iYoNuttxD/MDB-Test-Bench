@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MdbTestBench.App.ViewModels" x:Class="MdbTestBench.App.Views.SettingsView"
+             x:DataType="vm:MainWindowViewModel">
+  <ScrollViewer Padding="28">
+    <StackPanel Spacing="16" MaxWidth="920" HorizontalAlignment="Left">
+      <Border Classes="card">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="14" RowDefinitions="Auto,Auto,Auto">
+          <StackPanel>
+            <TextBlock Classes="label" Text="TRANSPORT" />
+            <ComboBox ItemsSource="{Binding TransportLabels}" SelectedItem="{Binding SelectedTransportLabel}"
+                      IsEnabled="{Binding CanChangeTransport}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" IsVisible="{Binding IsSimulationSelected}">
+            <TextBlock Classes="label" Text="SIMULATOR BEHAVIOR" />
+            <ComboBox ItemsSource="{Binding SimulatorBehaviorOptions}" SelectedItem="{Binding SelectedSimulatorBehavior}" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" Margin="0,12,0,0">
+            <TextBlock Classes="label" Text="POLLING MODE" />
+            <ComboBox ItemsSource="{Binding PollingModeOptions}" SelectedItem="{Binding SelectedPollingMode}" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,12,0,0">
+            <TextBlock Classes="label" Text="TIMEOUT (MS)" />
+            <NumericUpDown Value="{Binding TimeoutMilliseconds}" Minimum="50" Maximum="120000" Increment="50" />
+          </StackPanel>
+          <Border Grid.Row="2" Grid.ColumnSpan="2" IsVisible="{Binding IsSimulationSelected}" Background="#493B13" CornerRadius="6" Padding="10" Margin="0,12,0,0">
+            <TextBlock Text="SIMULATION is explicit throughout the UI. No serial hardware is used in this mode."
+                       Foreground="#FFD166" TextWrapping="Wrap" />
+          </Border>
+        </Grid>
+      </Border>
+      <Border Classes="card" IsVisible="{Binding IsHardwareSelected}">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="label" Text="SERIAL / WAFER MDB-RS232" />
+          <TextBlock Text="No port opens automatically. Logical commands remain unavailable until revision 2022061K5 framing is validated."
+                     Foreground="#FFD166" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="2*,Auto" ColumnSpacing="8">
+            <ComboBox ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}" PlaceholderText="No port selected" />
+            <Button Grid.Column="1" Content="Refresh ports" Command="{Binding RefreshPortsCommand}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+            <StackPanel><TextBlock Classes="label" Text="BAUD RATE" /><ComboBox ItemsSource="{Binding BaudRateOptions}" SelectedItem="{Binding SelectedBaudRate}" /></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Classes="label" Text="DATA BITS" /><ComboBox ItemsSource="{Binding DataBitsOptions}" SelectedItem="{Binding SelectedDataBits}" /></StackPanel>
+            <StackPanel Grid.Column="2"><TextBlock Classes="label" Text="PARITY" /><ComboBox ItemsSource="{Binding ParityOptions}" SelectedItem="{Binding SelectedParity}" /></StackPanel>
+            <StackPanel Grid.Column="3"><TextBlock Classes="label" Text="STOP BITS" /><ComboBox ItemsSource="{Binding StopBitsOptions}" SelectedItem="{Binding SelectedStopBits}" /></StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+      <Border Classes="card" IsVisible="{Binding IsHardwareSelected}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="ADVANCED / ADAPTER DEBUG" Foreground="#FFD166" FontWeight="Bold" />
+          <TextBlock Text="Experimental serial representation only. It does not define or claim the Wafer protocol."
+                     TextWrapping="Wrap" Foreground="#93A1B5" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+            <StackPanel><TextBlock Classes="label" Text="WIRE FORMAT" /><ComboBox ItemsSource="{Binding WireFormatOptions}" SelectedItem="{Binding SelectedWireFormat}" /></StackPanel>
+            <StackPanel Grid.Column="1" IsVisible="{Binding IsAsciiHex}"><TextBlock Classes="label" Text="ASCII HEX TERMINATOR" /><ComboBox ItemsSource="{Binding TerminatorOptions}" SelectedItem="{Binding SelectedTerminator}" /></StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="label" Text="CONNECTION LIFECYCLE" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Classes="primary" Content="Connect" Command="{Binding ConnectCommand}" />
+            <Button Content="Disconnect" Command="{Binding DisconnectCommand}" />
+            <Button Content="Save settings" Command="{Binding SaveSettingsCommand}" />
+          </StackPanel>
+          <TextBlock Text="{Binding ConnectionStatus}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding LastError, StringFormat='Last error: {0}'}" Foreground="#F08A91" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

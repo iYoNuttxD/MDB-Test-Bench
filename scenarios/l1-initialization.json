@@ -1,0 +1,12 @@
+{
+  "id": "l1-initialization",
+  "name": "L1 - Initialization",
+  "requiredProfile": "Level1",
+  "simulatorBehavior": "Normal",
+  "timeout": "00:00:10",
+  "steps": [
+    { "name": "RESET", "command": "Reset", "expectedResponse": "JustReset" },
+    { "name": "SETUP", "command": "Setup", "subcommand": "SetupConfig", "expectedResponse": "ReaderConfigData" },
+    { "name": "ENABLE", "command": "Reader", "subcommand": "Enable", "expectedResponse": "Ack" }
+  ]
+}

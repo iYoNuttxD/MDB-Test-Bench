@@ -1,16 +1,17 @@
 # Wafer MDB-RS232 integration
 
-The reported hardware is a Wafer MDB-RS232, revision `2022061K5`.
+The reported hardware is a Wafer MDB-RS232, revision `2022061K5`. Its exact host protocol has not been validated.
 
-The exact host protocol for this revision still needs to be validated. Public material for some newer MDB-RS232 versions indicates that polling may be performed internally by the adapter. That does not prove the behavior of revision `2022061K5`.
+Material about some newer adapters indicates that polling may be performed internally. That does not establish the behavior of revision `2022061K5`. Therefore Settings exposes `AdapterManaged` (default for initial modern-adapter tests) and `HostManaged`; no unconditional POLL loop exists.
 
-Consequently:
+## Implemented extension seam
 
-- no unknown framing, bytes, checksums, responses, or timing have been invented;
-- the Core models logical MDB independently from serial/Wafer framing;
-- `IWaferProtocolCodec` is the replaceable boundary for the validated adapter protocol;
-- `PollingMode` supports `AdapterManaged` and `HostManaged`;
-- transport capabilities expose the selected and supported polling modes;
-- POLL is not scattered or hardcoded as an unconditional background operation.
+- `IMdbTransport` isolates logical MDB exchange.
+- `IRawByteTransport` isolates serial bytes.
+- `IWaferProtocolCodec` must encode and decode a validated adapter protocol.
+- `WaferMdbRs232Transport` composes serial I/O with that codec.
+- No production/default Wafer codec is registered.
 
-Physical tests are required to establish serial settings, framing, initialization, polling ownership, error behavior, response boundaries, timing, and revision-specific behavior. Capture evidence with a safe test setup and compare it with authoritative documentation before implementing a production codec.
+Structured hardware commands are intentionally disabled in the UI until the codec is validated. Advanced / Adapter Debug can send user-confirmed data as `BinaryBytes` or `AsciiHex`, with None/CR/LF/CRLF terminators. Those settings are experimental probes, not protocol claims.
+
+Physical tests must determine serial parameters, initialization, byte representation, terminator, framing, checksums, response boundaries, incomplete-data behavior, error behavior, timing, and polling ownership. Record evidence in [TESTING_WITH_HARDWARE.md](TESTING_WITH_HARDWARE.md) before implementing a codec.

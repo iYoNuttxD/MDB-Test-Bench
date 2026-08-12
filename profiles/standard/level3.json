@@ -1,14 +1,19 @@
 {
-  "name": "MDB Level 3 baseline",
+  "id": "standard-level3",
+  "name": "MDB Level 3",
+  "description": "Level 3 baseline without claims about optional feature implementation.",
   "baseLevel": "Level3",
+  "isBuiltIn": true,
   "capabilities": {
-    "expansion": true,
-    "remoteVend": false,
-    "revalue": false,
-    "multiCurrency": false,
+    "expansion": "NotImplemented",
+    "revalue": "NotImplemented",
+    "remoteVend": "NotImplemented",
+    "multiCurrency": "NotImplemented",
+    "negativeVend": "Unsupported",
+    "dataEntry": "Unsupported",
+    "basket": "Unsupported",
+    "refund": "Unsupported",
     "extensions": {}
   },
-  "metadata": {
-    "status": "baseline; no unconfirmed feature is enabled"
-  }
+  "metadata": { "status": "baseline; no unconfirmed feature is enabled" }
 }

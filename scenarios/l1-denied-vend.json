@@ -1,0 +1,15 @@
+{
+  "id": "l1-denied-vend",
+  "name": "L1 - Denied Vend",
+  "requiredProfile": "Level1",
+  "simulatorBehavior": "AlwaysDeny",
+  "timeout": "00:00:10",
+  "steps": [
+    { "name": "RESET", "command": "Reset", "expectedResponse": "JustReset" },
+    { "name": "SETUP", "command": "Setup", "subcommand": "SetupConfig", "expectedResponse": "ReaderConfigData" },
+    { "name": "ENABLE", "command": "Reader", "subcommand": "Enable", "expectedResponse": "Ack" },
+    { "name": "WAIT SESSION", "command": "Poll", "expectedResponse": "BeginSession" },
+    { "name": "VEND REQUEST", "command": "Vend", "subcommand": "VendRequest", "expectedResponse": "VendDenied" },
+    { "name": "SESSION COMPLETE", "command": "Vend", "subcommand": "SessionComplete", "expectedResponse": "EndSession" }
+  ]
+}

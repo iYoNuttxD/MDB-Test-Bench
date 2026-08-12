@@ -1,0 +1,16 @@
+{
+  "id": "l1-session-complete",
+  "name": "L1 - Session Complete",
+  "requiredProfile": "Level1",
+  "simulatorBehavior": "Normal",
+  "timeout": "00:00:10",
+  "steps": [
+    { "name": "RESET", "command": "Reset", "expectedResponse": "JustReset" },
+    { "name": "SETUP", "command": "Setup", "subcommand": "SetupConfig", "expectedResponse": "ReaderConfigData" },
+    { "name": "ENABLE", "command": "Reader", "subcommand": "Enable", "expectedResponse": "Ack" },
+    { "name": "WAIT SESSION", "command": "Poll", "expectedResponse": "BeginSession" },
+    { "name": "VEND REQUEST", "command": "Vend", "subcommand": "VendRequest", "expectedResponse": "VendApproved" },
+    { "name": "VEND SUCCESS", "command": "Vend", "subcommand": "VendSuccess", "expectedResponse": "Ack" },
+    { "name": "SESSION COMPLETE", "command": "Vend", "subcommand": "SessionComplete", "expectedResponse": "EndSession" }
+  ]
+}

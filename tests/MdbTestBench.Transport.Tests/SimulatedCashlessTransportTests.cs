@@ -29,7 +29,7 @@ public sealed class SimulatedCashlessTransportTests
     public async Task DeniedVend_CanCompleteSession()
     {
         await using var transport = new SimulatedCashlessTransport(
-            new SimulatedCashlessOptions { ApproveVends = false });
+            new SimulatedCashlessOptions { Behavior = SimulatorBehavior.AlwaysDeny });
         await transport.ConnectAsync();
         await Send(transport, MdbCommandType.Reset);
         await Send(transport, MdbCommandType.Setup);

@@ -21,6 +21,16 @@ public sealed class VmcStateMachineTests
     }
 
     [Fact]
+    public void CanFireBlocksIncompatibleStructuredCommand()
+    {
+        var machine = new VmcStateMachine();
+        machine.Fire(VmcTrigger.Connect);
+
+        Assert.True(machine.CanFire(VmcTrigger.Reset));
+        Assert.False(machine.CanFire(VmcTrigger.RequestVend));
+    }
+
+    [Fact]
     public void InvalidSequence_ThrowsAndPreservesState()
     {
         var machine = new VmcStateMachine();

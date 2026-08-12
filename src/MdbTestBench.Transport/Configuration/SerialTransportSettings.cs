@@ -6,7 +6,7 @@ namespace MdbTestBench.Transport.Configuration;
 public sealed record SerialTransportSettings
 {
     public string PortName { get; init; } = string.Empty;
-    public int BaudRate { get; init; } = 115_200;
+    public int BaudRate { get; init; } = 9_600;
     public int DataBits { get; init; } = 8;
     public StopBits StopBits { get; init; } = StopBits.One;
     public Parity Parity { get; init; } = Parity.None;

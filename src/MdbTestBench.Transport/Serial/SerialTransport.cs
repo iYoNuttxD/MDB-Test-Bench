@@ -28,8 +28,30 @@ public sealed class SerialTransport(SerialTransportSettings settings) : IRawByte
                 WriteTimeout = (int)settings.OperationTimeout.TotalMilliseconds,
                 ReadBufferSize = settings.ReadBufferSize
             };
-            port.Open();
-            _port = port;
+            try
+            {
+                port.Open();
+                _port = port;
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                port.Dispose();
+                throw new TransportException(TransportError.PermissionDenied,
+                    $"Permission was denied for serial port '{settings.PortName}'.", exception);
+            }
+            catch (IOException exception)
+            {
+                port.Dispose();
+                var error = File.Exists(settings.PortName) ? TransportError.PortBusy : TransportError.PortNotFound;
+                throw new TransportException(error,
+                    $"Serial port '{settings.PortName}' is unavailable or already in use.", exception);
+            }
+            catch (ArgumentException exception)
+            {
+                port.Dispose();
+                throw new TransportException(TransportError.PortNotFound,
+                    $"Serial port '{settings.PortName}' does not exist.", exception);
+            }
         }
         finally
         {
@@ -56,18 +78,41 @@ public sealed class SerialTransport(SerialTransportSettings settings) : IRawByte
     public async Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
     {
         var port = GetOpenPort();
-        await port.BaseStream.WriteAsync(data, cancellationToken);
-        await port.BaseStream.FlushAsync(cancellationToken);
+        try
+        {
+            await port.BaseStream.WriteAsync(data, cancellationToken);
+            await port.BaseStream.FlushAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        {
+            throw new TransportException(TransportError.WriteFailure,
+                "The serial write failed. Check the adapter connection.", exception);
+        }
     }
 
     public async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         var port = GetOpenPort();
-        return await port.BaseStream.ReadAsync(buffer, cancellationToken);
+        try
+        {
+            var count = await port.BaseStream.ReadAsync(buffer, cancellationToken);
+            if (count == 0) throw new TransportException(TransportError.Disconnected,
+                "The serial device disconnected while reading.");
+            return count;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (TransportException) { throw; }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        {
+            throw new TransportException(TransportError.ReadFailure,
+                "The serial read failed. Check the adapter connection.", exception);
+        }
     }
 
     private SerialPort GetOpenPort() =>
-        IsConnected ? _port! : throw new InvalidOperationException("The serial transport is not connected.");
+        IsConnected ? _port! : throw new TransportException(TransportError.Disconnected,
+            "The serial transport is not connected.");
 
     public async ValueTask DisposeAsync()
     {

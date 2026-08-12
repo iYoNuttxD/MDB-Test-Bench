@@ -2,7 +2,7 @@ using MdbTestBench.Core.Protocol;
 
 namespace MdbTestBench.TestEngine.Models;
 
-public enum TestRunStatus { Passed, Failed, TimedOut, Cancelled }
+public enum TestRunStatus { Passed, Failed, TimedOut, Aborted }
 
 public sealed record TestStepResult(
     string Name,

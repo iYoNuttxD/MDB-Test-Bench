@@ -1,0 +1,17 @@
+{
+  "id": "l1-approved-vend",
+  "name": "L1 - Approved Vend",
+  "description": "Logical simulator scenario; not a claim of full MDB conformance.",
+  "requiredProfile": "Level1",
+  "simulatorBehavior": "AlwaysApprove",
+  "timeout": "00:00:10",
+  "steps": [
+    { "name": "RESET", "command": "Reset", "subcommand": "None", "expectedResponse": "JustReset" },
+    { "name": "SETUP", "command": "Setup", "subcommand": "SetupConfig", "expectedResponse": "ReaderConfigData" },
+    { "name": "ENABLE", "command": "Reader", "subcommand": "Enable", "expectedResponse": "Ack" },
+    { "name": "WAIT SESSION", "command": "Poll", "subcommand": "None", "expectedResponse": "BeginSession" },
+    { "name": "VEND REQUEST", "command": "Vend", "subcommand": "VendRequest", "expectedResponse": "VendApproved" },
+    { "name": "VEND SUCCESS", "command": "Vend", "subcommand": "VendSuccess", "expectedResponse": "Ack" },
+    { "name": "SESSION COMPLETE", "command": "Vend", "subcommand": "SessionComplete", "expectedResponse": "EndSession" }
+  ]
+}

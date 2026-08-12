@@ -1,14 +1,19 @@
 {
-  "name": "MDB Level 1 baseline",
+  "id": "standard-level1",
+  "name": "MDB Level 1",
+  "description": "Conservative Level 1 baseline. Capability states are explicit and are not implementation claims.",
   "baseLevel": "Level1",
+  "isBuiltIn": true,
   "capabilities": {
-    "expansion": false,
-    "remoteVend": false,
-    "revalue": false,
-    "multiCurrency": false,
+    "expansion": "Unsupported",
+    "revalue": "Unsupported",
+    "remoteVend": "Unsupported",
+    "multiCurrency": "Unsupported",
+    "negativeVend": "Unsupported",
+    "dataEntry": "Unsupported",
+    "basket": "Unsupported",
+    "refund": "Unsupported",
     "extensions": {}
   },
-  "metadata": {
-    "status": "baseline; validate against target hardware"
-  }
+  "metadata": { "status": "baseline; validate against target hardware" }
 }

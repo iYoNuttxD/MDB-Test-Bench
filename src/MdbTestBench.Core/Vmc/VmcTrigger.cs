@@ -6,12 +6,16 @@ public enum VmcTrigger
     Disconnect,
     Reset,
     SetupComplete,
+    Disable,
     Enable,
     BeginSession,
     RequestVend,
     ApproveVend,
     DenyVend,
+    CancelVend,
     CompleteVend,
     CompleteSession,
+    CancelSession,
+    NoStateChange,
     Fail
 }

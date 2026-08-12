@@ -4,5 +4,35 @@
              RequestedThemeVariant="Dark">
   <Application.Styles>
     <FluentTheme />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="#111722" />
+      <Setter Property="Foreground" Value="#E8EDF5" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="#1B2433" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+    <Style Selector="TextBlock.label">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="#93A1B5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.value">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.mono">
+      <Setter Property="FontFamily" Value="Menlo,Consolas,monospace" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="#2A7BDE" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Padding" Value="16,9" />
+    </Style>
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="#9B3941" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
   </Application.Styles>
 </Application>

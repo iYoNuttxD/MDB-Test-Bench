@@ -2,6 +2,7 @@ using System.Diagnostics;
 using MdbTestBench.Core.Logging;
 using MdbTestBench.Core.Protocol;
 using MdbTestBench.Core.Protocol.Frames;
+using MdbTestBench.Core.Protocol.Encoding;
 using MdbTestBench.TestEngine.Models;
 using MdbTestBench.Transport.Abstractions;
 
@@ -12,6 +13,7 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
     private static readonly MdbAddress VmcAddress = MdbAddress.Vmc;
     private static readonly MdbAddress CashlessAddress = new(0x10, MdbDeviceType.CashlessDevice1);
     private readonly IMdbLogSink _logSink = logSink ?? new NullMdbLogSink();
+    public event EventHandler<TestStepResult>? StepCompleted;
 
     public async Task<TestRunResult> RunAsync(
         TestScenario scenario,
@@ -47,6 +49,7 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
                     results.Add(new TestStepResult(step.Name, response.Response,
                         step.ExpectedResponse, passed, stepStopwatch.Elapsed,
                         passed ? null : $"Expected {step.ExpectedResponse}, received {response.Response}."));
+                    StepCompleted?.Invoke(this, results[^1]);
 
                     if (!passed)
                         return new TestRunResult(scenario.Id, TestRunStatus.Failed, results,
@@ -56,7 +59,16 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
                 {
                     results.Add(new TestStepResult(step.Name, null, step.ExpectedResponse, false,
                         stepStopwatch.Elapsed, exception.Message));
+                    StepCompleted?.Invoke(this, results[^1]);
                     return new TestRunResult(scenario.Id, TestRunStatus.Failed, results,
+                        runStopwatch.Elapsed, exception.Message);
+                }
+                catch (TimeoutException exception)
+                {
+                    results.Add(new TestStepResult(step.Name, null, step.ExpectedResponse, false,
+                        stepStopwatch.Elapsed, exception.Message));
+                    StepCompleted?.Invoke(this, results[^1]);
+                    return new TestRunResult(scenario.Id, TestRunStatus.TimedOut, results,
                         runStopwatch.Elapsed, exception.Message);
                 }
             }
@@ -65,7 +77,7 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return new TestRunResult(scenario.Id, TestRunStatus.Cancelled, results,
+            return new TestRunResult(scenario.Id, TestRunStatus.Aborted, results,
                 runStopwatch.Elapsed, "Scenario cancelled.");
         }
         catch (OperationCanceledException)
@@ -99,6 +111,8 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
     private static ReadOnlyMemory<byte> ParseHex(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return ReadOnlyMemory<byte>.Empty;
-        return Convert.FromHexString(value.Replace(" ", string.Empty, StringComparison.Ordinal));
+        var result = HexParser.Parse(value);
+        if (!result.IsValid) throw new InvalidDataException(result.Error);
+        return result.Bytes;
     }
 }

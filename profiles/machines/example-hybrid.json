@@ -1,14 +1,19 @@
 {
+  "id": "example-hybrid",
   "name": "Example hybrid machine",
+  "description": "Example only; not a claim about a real machine.",
   "baseLevel": "Level1",
+  "isBuiltIn": false,
   "capabilities": {
-    "expansion": true,
-    "remoteVend": true,
-    "revalue": false,
-    "multiCurrency": false,
+    "expansion": "Supported",
+    "revalue": "Unsupported",
+    "remoteVend": "Experimental",
+    "multiCurrency": "Unsupported",
+    "negativeVend": "NotImplemented",
+    "dataEntry": "NotImplemented",
+    "basket": "Unsupported",
+    "refund": "Unsupported",
     "extensions": {}
   },
-  "metadata": {
-    "purpose": "example only; not a claim about a real machine"
-  }
+  "metadata": { "purpose": "schema example" }
 }

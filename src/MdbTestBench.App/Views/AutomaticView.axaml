@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MdbTestBench.App.ViewModels" x:Class="MdbTestBench.App.Views.AutomaticView"
+             x:DataType="vm:MainWindowViewModel">
+  <Grid Margin="28" ColumnDefinitions="310,*" ColumnSpacing="16">
+    <Border Classes="card">
+      <Grid RowDefinitions="Auto,*">
+        <TextBlock Classes="label" Text="BUILT-IN SIMULATOR SCENARIOS" />
+        <ListBox Grid.Row="1" Margin="0,10,0,0" ItemsSource="{Binding Scenarios}" SelectedItem="{Binding SelectedScenario}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ScenarioDisplayViewModel">
+              <StackPanel Margin="4,7" Spacing="2">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding RequiredProfile}" FontSize="11" Foreground="#93A1B5" />
+                <TextBlock Text="{Binding Result}" FontSize="11" Foreground="#75B8FF" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+    <ScrollViewer Grid.Column="1">
+      <StackPanel Spacing="14">
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Classes="value" Text="{Binding SelectedScenario.Name}" />
+            <TextBlock Text="{Binding SelectedScenario.Description}" TextWrapping="Wrap" Foreground="#93A1B5" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Classes="primary" Content="Run scenario" Command="{Binding RunScenarioCommand}" />
+              <Button Content="Cancel" Command="{Binding CancelScenarioCommand}" IsEnabled="{Binding IsScenarioRunning}" />
+              <TextBlock Text="{Binding SelectedScenario.Result}" VerticalAlignment="Center" FontWeight="Bold" />
+              <TextBlock Text="{Binding SelectedScenario.Duration}" VerticalAlignment="Center" Foreground="#93A1B5" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <Grid RowDefinitions="Auto,*">
+            <Grid ColumnDefinitions="45,*,100,150" Margin="0,0,0,7">
+              <TextBlock Classes="label" Text="#" />
+              <TextBlock Grid.Column="1" Classes="label" Text="STEP" />
+              <TextBlock Grid.Column="2" Classes="label" Text="RESULT" />
+              <TextBlock Grid.Column="3" Classes="label" Text="RECEIVED" />
+            </Grid>
+            <ItemsControl Grid.Row="1" ItemsSource="{Binding SelectedScenario.Steps}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ScenarioStepDisplayViewModel">
+                  <Grid ColumnDefinitions="45,*,100,150" Margin="0,5">
+                    <TextBlock Classes="mono" Text="{Binding NumberText}" Foreground="#93A1B5" />
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="2" Text="{Binding Status}" />
+                    <TextBlock Grid.Column="3" Classes="mono" Text="{Binding Received}" TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Grid>
+        </Border>
+        <Border Classes="card">
+          <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="22">
+            <TextBlock Text="{Binding ScenarioTotal, StringFormat='Total  {0}'}" />
+            <TextBlock Grid.Column="1" Text="{Binding ScenarioPasses, StringFormat='Passes  {0}'}" Foreground="#41C97A" />
+            <TextBlock Grid.Column="2" Text="{Binding ScenarioFailures, StringFormat='Failures  {0}'}" Foreground="#F08A91" />
+            <TextBlock Grid.Column="3" Text="{Binding ScenarioSummary}" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

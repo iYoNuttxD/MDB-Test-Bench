@@ -46,7 +46,7 @@ public sealed class ScenarioRunnerTests
 
         var result = await runner.RunAsync(CreateBasicScenario(), source.Token);
 
-        Assert.Equal(TestRunStatus.Cancelled, result.Status);
+        Assert.Equal(TestRunStatus.Aborted, result.Status);
     }
 
     private static TestScenario CreateBasicScenario() => new()

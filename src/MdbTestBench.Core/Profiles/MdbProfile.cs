@@ -5,8 +5,11 @@ namespace MdbTestBench.Core.Profiles;
 
 public record MdbProfile
 {
+    public string Id { get; init; } = Guid.NewGuid().ToString("N");
     public required string Name { get; init; }
+    public string Description { get; init; } = string.Empty;
     public MdbFeatureLevel BaseLevel { get; init; } = MdbFeatureLevel.Custom;
+    public bool IsBuiltIn { get; init; }
     public MdbCapabilities Capabilities { get; init; } = new();
     public IReadOnlyDictionary<string, string> Metadata { get; init; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -14,20 +17,32 @@ public record MdbProfile
 
 public sealed record Level1Profile : MdbProfile
 {
-    public Level1Profile() => BaseLevel = MdbFeatureLevel.Level1;
+    public Level1Profile()
+    {
+        BaseLevel = MdbFeatureLevel.Level1;
+        IsBuiltIn = true;
+    }
 }
 
 public sealed record Level2Profile : MdbProfile
 {
-    public Level2Profile() => BaseLevel = MdbFeatureLevel.Level2;
+    public Level2Profile()
+    {
+        BaseLevel = MdbFeatureLevel.Level2;
+        IsBuiltIn = true;
+    }
 }
 
 public sealed record Level3Profile : MdbProfile
 {
-    public Level3Profile() => BaseLevel = MdbFeatureLevel.Level3;
+    public Level3Profile()
+    {
+        BaseLevel = MdbFeatureLevel.Level3;
+        IsBuiltIn = true;
+    }
 }
 
 public sealed record CustomProfile : MdbProfile
 {
-    public CustomProfile() => BaseLevel = MdbFeatureLevel.Custom;
+    public CustomProfile() => IsBuiltIn = false;
 }

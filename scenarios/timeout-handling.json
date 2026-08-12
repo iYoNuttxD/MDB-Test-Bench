@@ -1,0 +1,10 @@
+{
+  "id": "timeout-handling",
+  "name": "Timeout Handling",
+  "requiredProfile": "Level1",
+  "simulatorBehavior": "Timeout",
+  "timeout": "00:00:00.300",
+  "steps": [
+    { "name": "RESET WITH TIMEOUT", "command": "Reset", "expectedResponse": "JustReset" }
+  ]
+}

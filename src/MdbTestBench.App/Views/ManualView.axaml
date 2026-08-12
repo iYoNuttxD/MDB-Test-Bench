@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MdbTestBench.App.ViewModels" x:Class="MdbTestBench.App.Views.ManualView"
+             x:DataType="vm:MainWindowViewModel">
+  <ScrollViewer Padding="28">
+    <TabControl>
+      <TabItem Header="Structured">
+        <Grid ColumnDefinitions="2*,3*" ColumnSpacing="16" Margin="0,18,0,0">
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="label" Text="SEMANTIC COMMAND" />
+              <ComboBox ItemsSource="{Binding ManualCommandOptions}" SelectedItem="{Binding SelectedManualCommand}" />
+              <TextBlock Classes="label" Text="PRICE" />
+              <TextBox Text="{Binding ManualPrice}" PlaceholderText="5.00" />
+              <TextBlock Classes="label" Text="PRODUCT NUMBER" />
+              <TextBox Text="{Binding ManualProduct}" PlaceholderText="0001" />
+              <TextBlock Classes="label" Text="CURRENCY / VALUE" />
+              <TextBox Text="{Binding ManualValue}" PlaceholderText="Optional" />
+              <Button Classes="primary" Content="Send structured command" Command="{Binding SendStructuredCommand}"
+                      IsEnabled="{Binding CanUseStructured}" HorizontalAlignment="Stretch" />
+              <TextBlock IsVisible="{Binding IsHardwareSelected}"
+                         Text="Structured hardware commands remain disabled until a validated Wafer codec exists."
+                         Foreground="#FFD166" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="16">
+            <Border Classes="card">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="label" Text="LOGICAL PAYLOAD PREVIEW" />
+                <TextBlock Classes="mono" Text="{Binding ManualPreview}" TextWrapping="Wrap" FontSize="15" />
+                <TextBlock Text="This is a semantic preview. It is not Wafer wire framing." Foreground="#FFD166" />
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="label" Text="STATE MACHINE" />
+                <TextBlock Classes="value" Text="{Binding CurrentState}" />
+                <TextBlock Text="Incompatible commands are blocked before transport exchange." Foreground="#93A1B5" />
+                <TextBlock Text="{Binding ManualMessage}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Advanced / Raw">
+        <Border Classes="card" Margin="0,18,0,0" MaxWidth="850" HorizontalAlignment="Left">
+          <StackPanel Spacing="12">
+            <TextBlock Text="ADVANCED / ADAPTER DEBUG" Foreground="#FFD166" FontWeight="Bold" />
+            <TextBlock Text="Raw HEX is sent through the selected transport wire format. No MDB or Wafer framing is added."
+                       TextWrapping="Wrap" Foreground="#93A1B5" />
+            <TextBox Text="{Binding RawHex}" PlaceholderText="Example: 01 A0 FF" AcceptsReturn="True" MinHeight="90"
+                     FontFamily="Menlo,Consolas,monospace" />
+            <TextBlock Classes="mono" Text="{Binding RawValidation}" TextWrapping="Wrap" />
+            <CheckBox Content="I reviewed and confirm this raw payload" IsChecked="{Binding RawConfirmed}" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Classes="primary" Content="Send raw payload" Command="{Binding SendRawCommand}" />
+              <TextBlock Text="{Binding ManualMessage}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </TabItem>
+    </TabControl>
+  </ScrollViewer>
+</UserControl>

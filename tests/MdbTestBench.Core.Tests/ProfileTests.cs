@@ -14,13 +14,17 @@ public sealed class ProfileTests
         var profile = new Level1Profile
         {
             Name = "Hybrid machine",
-            Capabilities = new MdbCapabilities { Expansion = true, RemoteVend = true }
+            Capabilities = new MdbCapabilities
+            {
+                Expansion = CapabilityStatus.Supported,
+                RemoteVend = CapabilityStatus.Experimental
+            }
         };
 
         Assert.Equal(MdbFeatureLevel.Level1, profile.BaseLevel);
-        Assert.True(profile.Capabilities.Expansion);
-        Assert.True(profile.Capabilities.RemoteVend);
-        Assert.False(profile.Capabilities.Revalue);
+        Assert.Equal(CapabilityStatus.Supported, profile.Capabilities.Expansion);
+        Assert.Equal(CapabilityStatus.Experimental, profile.Capabilities.RemoteVend);
+        Assert.Equal(CapabilityStatus.Unsupported, profile.Capabilities.Revalue);
     }
 
     [Fact]
@@ -34,7 +38,7 @@ public sealed class ProfileTests
         {
             Name = "Standard L2",
             BaseLevel = MdbFeatureLevel.Level2,
-            Capabilities = new MdbCapabilities { Expansion = true }
+            Capabilities = new MdbCapabilities { Expansion = CapabilityStatus.Supported }
         };
 
         var json = JsonSerializer.Serialize(profile, options);
@@ -43,6 +47,6 @@ public sealed class ProfileTests
         Assert.NotNull(result);
         Assert.Equal(profile.Name, result.Name);
         Assert.Equal(MdbFeatureLevel.Level2, result.BaseLevel);
-        Assert.True(result.Capabilities.Expansion);
+        Assert.Equal(CapabilityStatus.Supported, result.Capabilities.Expansion);
     }
 }

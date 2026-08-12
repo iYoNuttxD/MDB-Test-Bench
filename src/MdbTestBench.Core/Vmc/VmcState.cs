@@ -5,12 +5,13 @@ public enum VmcState
     Disconnected,
     Connected,
     Reset,
-    Configured,
+    Setup,
+    Disabled,
     Enabled,
-    SessionActive,
+    SessionIdle,
     VendPending,
     VendApproved,
     VendDenied,
-    VendCompleted,
-    Faulted
+    SessionComplete,
+    Error
 }

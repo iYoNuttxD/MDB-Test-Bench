@@ -1,30 +1,42 @@
 # Architecture
 
-MDB Test Bench v0.1 is a cross-platform desktop application whose logical role is the VMC/master side of an MDB test setup. The dependency direction is deliberately one-way:
+MDB Test Bench v0.1 is a cross-platform desktop application whose logical role is the VMC/master side of an MDB test setup.
 
 ```text
-App (Avalonia/MVVM)
-  -> TestEngine
-  -> Transport
-  -> Core
+Avalonia Views
+  -> MainWindowViewModel / application services
+      -> TestEngine
+      -> Transport
+      -> Core
 ```
 
-`MdbTestBench.Core` has no Avalonia or serial dependency. It owns logical MDB concepts, profiles, capabilities, structured log records, and the VMC state machine. The encoding and decoding namespaces define extension seams; they do not claim a physical wire format.
+## Boundaries
 
-`MdbTestBench.Transport` owns asynchronous I/O. `IMdbTransport` exchanges logical `MdbFrame` instances. `SerialTransport` is only a raw byte channel. `WaferMdbRs232Transport` composes that channel with `IWaferProtocolCodec`, which must be supplied after the adapter protocol is validated. `SimulatedCashlessTransport` is a hardware-free deterministic implementation.
+`MdbTestBench.Core` owns logical frames, commands, responses, profiles, capability states, structured logs, safe HEX parsing, semantic manual-command construction, and the VMC state machine. It references neither Avalonia nor `System.IO.Ports`. A manual semantic payload is descriptive data; it is not silently converted into invented Wafer bytes.
 
-`MdbTestBench.TestEngine` loads JSON scenarios and runs their steps sequentially with cancellation, a scenario deadline, expected-response validation, and structured logging.
+`MdbTestBench.Transport` owns I/O and adapter representation. `IMdbTransport` exchanges logical `MdbFrame` objects. `IRawByteTransport` is the byte channel, while `IRawCommandTransport` supports explicitly advanced diagnostics. `SerialTransport` wraps `SerialPort`, translates common lifecycle failures into friendly transport errors, and never opens itself at application startup.
 
-`MdbTestBench.App` is an Avalonia shell using MVVM. It performs explicit composition at startup and does not open a serial port automatically. View code-behind contains only unavoidable view initialization.
+`SerialWireFormatter` implements only user-selected experimental representation:
 
-## Key boundaries
+- `BinaryBytes`: preserves the input bytes;
+- `AsciiHex`: uppercase ASCII hexadecimal plus None, CR, LF, or CRLF.
 
-- Feature Level and capabilities are independent. A Level 1 profile can explicitly advertise selected optional capabilities.
-- Polling ownership belongs to transport configuration/capabilities, not to arbitrary UI or domain code.
-- Logical MDB frames are distinct from Wafer serial frames.
-- All transport APIs are asynchronous and cancellation-aware.
-- No database, cloud service, web backend, or OS-specific domain API is used.
+This formatter is entirely outside Core and does not claim to be the Wafer protocol.
 
-## Lifecycle
+`WaferMdbRs232Transport` still requires an injected `IWaferProtocolCodec`. No default codec exists. Until a validated codec is implemented, the UI disables Structured hardware actions and exposes only confirmed Advanced / Adapter Debug raw exchange.
 
-Transports implement `IAsyncDisposable`. The owner must disconnect or dispose them. Scenario deadlines use linked cancellation tokens, and the simulator serializes stateful exchanges with a semaphore rather than busy-waiting.
+`SimulatedCashlessTransport` implements both logical and raw development paths. It owns the state machine used by the UI and supports Normal, AlwaysApprove, AlwaysDeny, Timeout, MalformedResponse, and UnexpectedResponse behavior.
+
+`MdbTestBench.TestEngine` executes typed JSON scenarios sequentially, reports expected/received values and duration, writes to the shared structured log sink, supports cancellation, and enforces scenario deadlines.
+
+`MdbTestBench.App` composes services explicitly. View code-behind contains only view initialization, clipboard integration, and window-lifecycle persistence; MDB rules remain outside code-behind.
+
+## State and concurrency
+
+The logical lifecycle is Disconnected → Connected → Reset → Disabled → Enabled → SessionIdle → VendPending → VendApproved/VendDenied → SessionComplete → Enabled. Invalid Structured commands are blocked through `VmcStateMachine.CanFire`; Advanced raw actions remain possible only with an explicit warning and confirmation.
+
+All transport/test operations use `async`/`await` and `CancellationToken`. Stateful exchanges are serialized with semaphores. Transports implement `IAsyncDisposable`. No busy-wait, `Thread.Sleep`, database, cloud service, or web backend is used.
+
+## Persistence
+
+`AppPaths` resolves the operating system's per-user local application-data directory. Settings, window size, last profile, custom profiles, future custom scenarios, and exported logs live outside the application installation directory. A saved serial name is cleared from selection when discovery no longer returns it.

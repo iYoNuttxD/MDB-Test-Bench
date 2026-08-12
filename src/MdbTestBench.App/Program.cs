@@ -1,5 +1,6 @@
 using Avalonia;
 using MdbTestBench.Transport.Configuration;
+using MdbTestBench.App.Services;
 
 namespace MdbTestBench.App;
 
@@ -8,13 +9,16 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        var settingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-        var settings = new JsonSettingsStore().LoadAsync(settingsPath).GetAwaiter().GetResult();
-        BuildAvaloniaApp(settings).StartWithClassicDesktopLifetime(args);
+        var paths = new AppPaths();
+        paths.EnsureDirectories();
+        AppSettings settings;
+        try { settings = new JsonSettingsStore().LoadAsync(paths.Settings).GetAwaiter().GetResult(); }
+        catch { settings = new AppSettings(); }
+        BuildAvaloniaApp(settings, paths).StartWithClassicDesktopLifetime(args);
     }
 
-    public static AppBuilder BuildAvaloniaApp(AppSettings settings) =>
-        AppBuilder.Configure(() => new App(settings))
+    public static AppBuilder BuildAvaloniaApp(AppSettings settings, AppPaths paths) =>
+        AppBuilder.Configure(() => new App(settings, paths))
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();

@@ -28,6 +28,8 @@ public enum MdbCommandType
 public enum MdbSubcommandType
 {
     None,
+    SetupConfig,
+    SetupMaxMinPrices,
     Disable,
     Enable,
     Cancel,

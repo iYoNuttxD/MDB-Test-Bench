@@ -1,9 +1,18 @@
 # MDB scope for v0.1
 
-The application is modeled as the VMC/master side. This foundation represents command, subcommand, response, addressing, direction, raw payload, interpreted payload, timestamps, Feature Levels 1–3, custom profiles, and independent capabilities.
+The application is modeled as the VMC/master side and represents addresses, direction, commands, subcommands, responses, raw payloads, interpreted payloads, high-resolution timestamps, Feature Levels 1–3, custom profiles, and independent capability status.
 
-The simulator supports a development-oriented logical flow: connect, reset, setup, enable, begin session, vend request, approved or denied result, vend success, session complete, and end session. This is intended to exercise state management, UI integration, logs, test scenarios, concurrency, cancellation, and timeouts.
+Structured v0.1 actions cover:
 
-It is not a claim of full MDB conformance. Exact MDB field encoding, timing compliance, mode-bit handling, checksums, peripheral variants, and behaviors requiring licensed or validated specifications remain outside this initial foundation. They must be implemented from authoritative specifications and verified against hardware.
+- Reset;
+- Setup Config and Max/Min Prices as semantic operations;
+- Reader Disable, Enable, and Cancel;
+- Wait Session/Poll as a logical event whose physical ownership depends on transport settings;
+- Vend Request, Cancel, Success, Failure, and Session Complete;
+- an Expansion extension point without unconfirmed command details.
 
-Level alone never infers every capability. Profiles explicitly declare capabilities so mixed real-world behavior can be represented without pretending it belongs to a standard level.
+The semantic command builder deliberately produces no Wafer wire bytes. Price/product/value fields appear as interpreted logical payload until an authoritative MDB encoder and validated Wafer codec are available.
+
+The simulator supports initialization, approved and denied vending, cancellation, session completion, timeouts, malformed responses, unexpected responses, raw diagnostics, concurrency, and cancellation. Its output is always labelled SIMULATION.
+
+This is not full MDB conformance. Exact field encoding, timing compliance, mode-bit handling, checksums, peripheral variants, and behaviors requiring authoritative specifications remain outside this version. A capability can be Unsupported, Supported, Experimental, or NotImplemented; listing it never asserts implementation.
