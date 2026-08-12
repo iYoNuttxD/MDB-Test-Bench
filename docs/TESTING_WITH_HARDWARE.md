@@ -6,6 +6,8 @@ Operator: ____________________
 Machine / OS: ____________________  
 USB-RS232 model and driver: ____________________  
 Cashless firmware/build: ____________________
+MDB Test Bench package/version: ____________________
+Package SHA-256: ____________________
 
 ## Safety preflight
 
@@ -52,3 +54,18 @@ Authoritative source or capture reference: ________________________________
 Approved to implement `IWaferProtocolCodec` by: ___________________________
 
 Do not implement a production codec until the evidence above is repeatable and reviewed.
+
+## Exact execution order for the next lab session
+
+1. Verify the downloaded package hash and start the native package for the test computer.
+2. Confirm version `0.1.0`, Simulator selected, and no serial port opened.
+3. Run L1 Initialization in Simulator as a software preflight; export the session log.
+4. Power down and inspect pinout, voltage, ground, isolation, and cabling with the hardware owner.
+5. Connect USB-RS232, refresh ports, and record the exact discovered name and driver.
+6. Select Serial / Wafer and begin at 9600/8/N/1, AdapterManaged, BinaryBytes; do not use Structured mode.
+7. Connect and capture all unsolicited Wafer traffic with timestamps before transmitting.
+8. Send only reviewed Adapter Debug probes; compare BinaryBytes and AsciiHex with None, CR, LF, and CRLF.
+9. Determine and record frame boundaries, terminator, checksum/error rule, maximum response, and incomplete-response behavior.
+10. Compare AdapterManaged and HostManaged carefully; stop immediately if duplicate POLL traffic is observed.
+11. Only after the wire format is repeatable, record RESET, SETUP, ENABLE, begin session, VEND REQUEST, vend result, SESSION COMPLETE, and end-session exchanges.
+12. Reproduce each exchange, preserve raw logs/captures, and obtain review approval before implementing `IWaferProtocolCodec`.

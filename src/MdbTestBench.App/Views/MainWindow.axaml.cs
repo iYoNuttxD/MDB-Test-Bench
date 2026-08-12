@@ -13,7 +13,21 @@ public sealed partial class MainWindow : Window
     private async void OnClosed(object? sender, EventArgs e)
     {
         if (DataContext is not ViewModels.MainWindowViewModel viewModel) return;
-        await viewModel.SaveWindowStateAsync(Width, Height);
-        await viewModel.DisposeAsync();
+        try
+        {
+            await viewModel.SaveWindowStateAsync(Width, Height);
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError($"Unable to save window state: {exception.Message}");
+        }
+        try
+        {
+            await viewModel.DisposeAsync();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError($"Unable to dispose application services: {exception.Message}");
+        }
     }
 }

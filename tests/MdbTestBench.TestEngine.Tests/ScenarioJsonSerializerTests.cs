@@ -24,4 +24,12 @@ public sealed class ScenarioJsonSerializerTests
         Assert.Equal(MdbCommandType.Reset, result.Steps[0].Command);
         Assert.Contains("\"reset\"", json, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void InvalidScenarioJsonIsRejectedByDomainValidation()
+    {
+        const string json = """{ "id": "", "name": "", "timeout": "00:00:00", "steps": [] }""";
+
+        Assert.Throws<InvalidDataException>(() => new ScenarioJsonSerializer().Deserialize(json));
+    }
 }

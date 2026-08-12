@@ -1,8 +1,17 @@
 namespace MdbTestBench.Core.Vmc;
 
-public sealed class VmcSimulator(VmcStateMachine stateMachine)
+public sealed class VmcSimulator
 {
-    public VmcState State => stateMachine.State;
+    private VmcStateMachine _stateMachine;
 
-    public VmcState Apply(VmcTrigger trigger) => stateMachine.Fire(trigger);
+    public VmcSimulator(VmcStateMachine? stateMachine = null) =>
+        _stateMachine = stateMachine ?? new VmcStateMachine();
+
+    public VmcState State => _stateMachine.State;
+
+    public bool CanApply(VmcTrigger trigger) => _stateMachine.CanFire(trigger);
+
+    public VmcState Apply(VmcTrigger trigger) => _stateMachine.Fire(trigger);
+
+    public void Restart() => _stateMachine = new VmcStateMachine();
 }

@@ -23,6 +23,11 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
         var runStopwatch = Stopwatch.StartNew();
         var results = new List<TestStepResult>();
 
+        var validationErrors = TestScenarioValidator.Validate(scenario);
+        if (validationErrors.Count > 0)
+            return new TestRunResult(scenario.Id ?? string.Empty, TestRunStatus.Failed, results,
+                runStopwatch.Elapsed, string.Join(" ", validationErrors));
+
         using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutSource.CancelAfter(scenario.Timeout);
 
@@ -88,6 +93,16 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
         catch (TimeoutException exception)
         {
             return new TestRunResult(scenario.Id, TestRunStatus.TimedOut, results,
+                runStopwatch.Elapsed, exception.Message);
+        }
+        catch (Exception exception) when (exception is InvalidDataException or ArgumentException)
+        {
+            return new TestRunResult(scenario.Id, TestRunStatus.Failed, results,
+                runStopwatch.Elapsed, exception.Message);
+        }
+        catch (TransportException exception)
+        {
+            return new TestRunResult(scenario.Id, TestRunStatus.Failed, results,
                 runStopwatch.Elapsed, exception.Message);
         }
     }

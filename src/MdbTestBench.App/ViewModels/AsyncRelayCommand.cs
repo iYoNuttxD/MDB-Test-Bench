@@ -15,6 +15,10 @@ public sealed class AsyncRelayCommand(Func<object?, Task> execute, Predicate<obj
         _isRunning = true;
         NotifyCanExecuteChanged();
         try { await execute(parameter); }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError($"Asynchronous command failed: {exception.Message}");
+        }
         finally
         {
             _isRunning = false;

@@ -15,3 +15,5 @@ Material about some newer adapters indicates that polling may be performed inter
 Structured hardware commands are intentionally disabled in the UI until the codec is validated. Advanced / Adapter Debug can send user-confirmed data as `BinaryBytes` or `AsciiHex`, with None/CR/LF/CRLF terminators. Those settings are experimental probes, not protocol claims.
 
 Physical tests must determine serial parameters, initialization, byte representation, terminator, framing, checksums, response boundaries, incomplete-data behavior, error behavior, timing, and polling ownership. Record evidence in [TESTING_WITH_HARDWARE.md](TESTING_WITH_HARDWARE.md) before implementing a codec.
+
+The distributed v0.1 packages therefore contain no registered production codec. A successful application smoke test or simulator scenario says nothing about revision `2022061K5` compatibility.

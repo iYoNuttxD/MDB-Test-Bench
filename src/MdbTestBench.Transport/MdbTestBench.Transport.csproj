@@ -3,6 +3,6 @@
     <ProjectReference Include="../MdbTestBench.Core/MdbTestBench.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.IO.Ports" Version="10.0.1" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.11" />
   </ItemGroup>
 </Project>

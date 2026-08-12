@@ -10,9 +10,11 @@ namespace MdbTestBench.App.Services;
 
 public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
 {
+    private readonly SemaphoreSlim _operationGate = new(1, 1);
     private SimulatedCashlessTransport? _logicalTransport;
     private IRawCommandTransport? _rawTransport;
     private SerialTransport? _serial;
+    private bool _disposed;
 
     public bool IsConnected => _logicalTransport?.IsConnected == true || _serial?.IsConnected == true;
     public bool IsSimulation => _logicalTransport is SimulatedCashlessTransport;
@@ -25,44 +27,78 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
 
     public async Task ConnectAsync(AppSettings settings, CancellationToken cancellationToken = default)
     {
-        await DisconnectAsync(cancellationToken);
-        if (settings.SelectedTransport == TransportKind.Simulated)
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await _operationGate.WaitAsync(cancellationToken);
+        try
         {
-            var simulator = new SimulatedCashlessTransport(new SimulatedCashlessOptions
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            await DisconnectCoreAsync(cancellationToken);
+            if (settings.SelectedTransport == TransportKind.Simulated)
             {
-                Behavior = settings.SimulatorBehavior,
-                OperationTimeout = TimeSpan.FromMilliseconds(settings.TimeoutMilliseconds)
-            }, settings.PollingMode);
-            await simulator.ConnectAsync(cancellationToken);
-            _logicalTransport = simulator;
-            _rawTransport = simulator;
-            await WriteStatusAsync("Simulator connected", MdbLogSeverity.Information, cancellationToken);
-            return;
-        }
+                var simulator = new SimulatedCashlessTransport(new SimulatedCashlessOptions
+                {
+                    Behavior = settings.SimulatorBehavior,
+                    OperationTimeout = TimeSpan.FromMilliseconds(settings.TimeoutMilliseconds)
+                }, settings.PollingMode);
+                try
+                {
+                    await simulator.ConnectAsync(cancellationToken);
+                }
+                catch
+                {
+                    await simulator.DisposeAsync();
+                    throw;
+                }
+                _logicalTransport = simulator;
+                _rawTransport = simulator;
+                await WriteStatusAsync("Simulator connected", MdbLogSeverity.Information, cancellationToken);
+                return;
+            }
 
-        var serialSettings = new SerialTransportSettings
+            var serialSettings = new SerialTransportSettings
+            {
+                PortName = settings.SerialPort,
+                BaudRate = settings.BaudRate,
+                DataBits = settings.DataBits,
+                Parity = settings.Parity,
+                StopBits = settings.StopBits,
+                PollingMode = settings.PollingMode,
+                OperationTimeout = TimeSpan.FromMilliseconds(settings.TimeoutMilliseconds)
+            };
+            var serial = new SerialTransport(serialSettings);
+            try
+            {
+                await serial.ConnectAsync(cancellationToken);
+            }
+            catch
+            {
+                await serial.DisposeAsync();
+                throw;
+            }
+            _serial = serial;
+            _rawTransport = new SerialDiagnosticTransport(serial, new SerialWireFormatOptions
+            {
+                Format = settings.WireFormat,
+                Terminator = settings.AsciiHexTerminator
+            }, serialSettings.OperationTimeout);
+            await WriteStatusAsync($"Serial adapter connected on {settings.SerialPort}; logical Wafer codec unavailable",
+                MdbLogSeverity.Warning, cancellationToken);
+        }
+        finally
         {
-            PortName = settings.SerialPort,
-            BaudRate = settings.BaudRate,
-            DataBits = settings.DataBits,
-            Parity = settings.Parity,
-            StopBits = settings.StopBits,
-            PollingMode = settings.PollingMode,
-            OperationTimeout = TimeSpan.FromMilliseconds(settings.TimeoutMilliseconds)
-        };
-        var serial = new SerialTransport(serialSettings);
-        await serial.ConnectAsync(cancellationToken);
-        _serial = serial;
-        _rawTransport = new SerialDiagnosticTransport(serial, new SerialWireFormatOptions
-        {
-            Format = settings.WireFormat,
-            Terminator = settings.AsciiHexTerminator
-        }, serialSettings.OperationTimeout);
-        await WriteStatusAsync($"Serial adapter connected on {settings.SerialPort}; logical Wafer codec unavailable",
-            MdbLogSeverity.Warning, cancellationToken);
+            _operationGate.Release();
+        }
     }
 
     public async Task DisconnectAsync(CancellationToken cancellationToken = default)
+    {
+        if (_disposed) return;
+        await _operationGate.WaitAsync(cancellationToken);
+        try { await DisconnectCoreAsync(cancellationToken); }
+        finally { _operationGate.Release(); }
+    }
+
+    private async Task DisconnectCoreAsync(CancellationToken cancellationToken)
     {
         if (_logicalTransport is not null)
         {
@@ -81,11 +117,13 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
 
     public async Task<MdbFrame> ExchangeAsync(MdbFrame request, CancellationToken cancellationToken = default)
     {
-        if (_logicalTransport is null)
-            throw new InvalidOperationException("Structured MDB commands require the Simulator until a validated Wafer codec is available.");
-        await LogFrameAsync(request, MdbLogSeverity.Information, cancellationToken);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await _operationGate.WaitAsync(cancellationToken);
         try
         {
+            if (_logicalTransport is null)
+                throw new InvalidOperationException("Structured MDB commands require the Simulator until a validated Wafer codec is available.");
+            await LogFrameAsync(request, MdbLogSeverity.Information, cancellationToken);
             var response = await _logicalTransport.ExchangeAsync(request, cancellationToken);
             await LogFrameAsync(response, response.Response == MdbResponseType.Unknown
                 ? MdbLogSeverity.Warning : MdbLogSeverity.Information, cancellationToken);
@@ -96,17 +134,20 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
             await WriteStatusAsync(exception.Message, MdbLogSeverity.Error, cancellationToken);
             throw;
         }
+        finally { _operationGate.Release(); }
     }
 
     public async Task<RawExchangeResult> ExchangeRawAsync(
         ReadOnlyMemory<byte> payload,
         CancellationToken cancellationToken = default)
     {
-        if (_rawTransport is null) throw new InvalidOperationException("Connect a transport before sending raw data.");
-        await logs.WriteAsync(new MdbLogEntry(DateTimeOffset.UtcNow, MdbDirection.Tx, "VMC", "Adapter",
-            "RAW", "Advanced / Adapter Debug", payload, MdbLogSeverity.Warning), cancellationToken);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await _operationGate.WaitAsync(cancellationToken);
         try
         {
+            if (_rawTransport is null) throw new InvalidOperationException("Connect a transport before sending raw data.");
+            await logs.WriteAsync(new MdbLogEntry(DateTimeOffset.UtcNow, MdbDirection.Tx, "VMC", "Adapter",
+                "RAW", "Advanced / Adapter Debug", payload, MdbLogSeverity.Warning), cancellationToken);
             var result = await _rawTransport.ExchangeRawAsync(payload, cancellationToken);
             await logs.WriteAsync(new MdbLogEntry(DateTimeOffset.UtcNow, MdbDirection.Rx, "Adapter", "VMC",
                 "RAW", result.Description, result.ResponseBytes, MdbLogSeverity.Warning), cancellationToken);
@@ -117,6 +158,7 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
             await WriteStatusAsync(exception.Message, MdbLogSeverity.Error, cancellationToken);
             throw;
         }
+        finally { _operationGate.Release(); }
     }
 
     private ValueTask LogFrameAsync(MdbFrame frame, MdbLogSeverity severity, CancellationToken token) =>
@@ -132,7 +174,15 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await DisconnectAsync();
+        if (_disposed) return;
+        await _operationGate.WaitAsync();
+        try
+        {
+            if (_disposed) return;
+            await DisconnectCoreAsync(CancellationToken.None);
+            _disposed = true;
+        }
+        finally { _operationGate.Release(); }
         GC.SuppressFinalize(this);
     }
 }

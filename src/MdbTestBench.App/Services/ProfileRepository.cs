@@ -6,22 +6,30 @@ namespace MdbTestBench.App.Services;
 
 public sealed class ProfileRepository(AppPaths paths, ProfileJsonSerializer serializer)
 {
+    public const long MaxImportFileBytes = 1_048_576;
+
+    public IReadOnlyList<string> LoadWarnings { get; private set; } = [];
+
     public IReadOnlyList<MdbProfile> LoadAll()
     {
         paths.EnsureDirectories();
         var profiles = new List<MdbProfile>(CreateBuiltIn());
+        var warnings = new List<string>();
         foreach (var file in Directory.EnumerateFiles(paths.Profiles, "*.json"))
         {
             try
             {
+                if (new FileInfo(file).Length > MaxImportFileBytes)
+                    throw new InvalidDataException($"Profile JSON exceeds the {MaxImportFileBytes}-byte limit.");
                 var profile = serializer.Deserialize(File.ReadAllText(file));
                 profiles.Add(profile with { IsBuiltIn = false });
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
             {
-                // Invalid custom files remain on disk for user recovery and are not loaded.
+                warnings.Add($"Skipped invalid profile '{Path.GetFileName(file)}': {exception.Message}");
             }
         }
+        LoadWarnings = warnings;
         return profiles;
     }
 
@@ -29,20 +37,24 @@ public sealed class ProfileRepository(AppPaths paths, ProfileJsonSerializer seri
     {
         if (profile.IsBuiltIn) throw new InvalidOperationException("Built-in profiles cannot be overwritten.");
         paths.EnsureDirectories();
-        var file = Path.Combine(paths.Profiles, $"{SanitizeFileName(profile.Id)}.json");
+        var file = BuildContainedPath(paths.Profiles, $"{SanitizeFileName(profile.Id)}.json");
         await File.WriteAllTextAsync(file, serializer.Serialize(profile), cancellationToken);
     }
 
     public void DeleteCustom(MdbProfile profile)
     {
         if (profile.IsBuiltIn) throw new InvalidOperationException("Built-in profiles cannot be deleted.");
-        var file = Path.Combine(paths.Profiles, $"{SanitizeFileName(profile.Id)}.json");
+        var file = BuildContainedPath(paths.Profiles, $"{SanitizeFileName(profile.Id)}.json");
         if (File.Exists(file)) File.Delete(file);
     }
 
     public async Task<MdbProfile> ImportAsync(string sourcePath, CancellationToken cancellationToken = default)
     {
-        var json = await File.ReadAllTextAsync(sourcePath, cancellationToken);
+        var source = new FileInfo(sourcePath);
+        if (!source.Exists) throw new FileNotFoundException("The profile JSON file was not found.", sourcePath);
+        if (source.Length > MaxImportFileBytes)
+            throw new InvalidDataException($"Profile JSON exceeds the {MaxImportFileBytes}-byte limit.");
+        var json = await File.ReadAllTextAsync(source.FullName, cancellationToken);
         var imported = serializer.Deserialize(json) with
         {
             Id = Guid.NewGuid().ToString("N"),
@@ -55,8 +67,10 @@ public sealed class ProfileRepository(AppPaths paths, ProfileJsonSerializer seri
     public async Task<string> ExportAsync(MdbProfile profile, CancellationToken cancellationToken = default)
     {
         paths.EnsureDirectories();
-        var file = Path.Combine(paths.Profiles,
-            $"export-{SanitizeFileName(profile.Name)}-{DateTimeOffset.Now:yyyyMMdd-HHmmss}.json");
+        var profileExports = Path.Combine(paths.Exports, "profiles");
+        Directory.CreateDirectory(profileExports);
+        var file = BuildContainedPath(profileExports,
+            $"{SanitizeFileName(profile.Name)}-{DateTimeOffset.Now:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}.json");
         await File.WriteAllTextAsync(file, serializer.Serialize(profile), cancellationToken);
         return file;
     }
@@ -93,7 +107,17 @@ public sealed class ProfileRepository(AppPaths paths, ProfileJsonSerializer seri
     private static string SanitizeFileName(string value)
     {
         var invalid = Path.GetInvalidFileNameChars();
-        var safe = new string(value.Select(character => invalid.Contains(character) ? '-' : character).ToArray());
-        return string.IsNullOrWhiteSpace(safe) ? "profile" : safe;
+        var safe = new string(value.Select(character =>
+            invalid.Contains(character) || character is '/' or '\\' ? '-' : character).ToArray()).Trim('.', ' ');
+        return string.IsNullOrWhiteSpace(safe) ? "profile" : safe[..Math.Min(safe.Length, 100)];
+    }
+
+    private static string BuildContainedPath(string directory, string fileName)
+    {
+        var root = Path.GetFullPath(directory) + Path.DirectorySeparatorChar;
+        var candidate = Path.GetFullPath(Path.Combine(root, fileName));
+        if (!candidate.StartsWith(root, StringComparison.Ordinal))
+            throw new InvalidOperationException("The requested file path is outside the application data directory.");
+        return candidate;
     }
 }

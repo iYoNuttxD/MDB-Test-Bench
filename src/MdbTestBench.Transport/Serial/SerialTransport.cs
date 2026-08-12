@@ -19,6 +19,7 @@ public sealed class SerialTransport(SerialTransportSettings settings) : IRawByte
         await _gate.WaitAsync(cancellationToken);
         try
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (IsConnected) return;
             cancellationToken.ThrowIfCancellationRequested();
             var port = new SerialPort(settings.PortName, settings.BaudRate, settings.Parity,
@@ -61,6 +62,7 @@ public sealed class SerialTransport(SerialTransportSettings settings) : IRawByte
 
     public async Task DisconnectAsync(CancellationToken cancellationToken = default)
     {
+        if (_disposed) return;
         await _gate.WaitAsync(cancellationToken);
         try
         {
@@ -117,9 +119,22 @@ public sealed class SerialTransport(SerialTransportSettings settings) : IRawByte
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
-        await DisconnectAsync();
-        _gate.Dispose();
-        _disposed = true;
+        await _gate.WaitAsync();
+        try
+        {
+            if (_disposed) return;
+            if (_port is not null)
+            {
+                if (_port.IsOpen) _port.Close();
+                _port.Dispose();
+                _port = null;
+            }
+            _disposed = true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
         GC.SuppressFinalize(this);
     }
 }

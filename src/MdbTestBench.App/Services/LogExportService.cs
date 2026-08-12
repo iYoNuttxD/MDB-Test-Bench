@@ -9,7 +9,7 @@ public sealed class LogExportService(AppPaths paths)
         CancellationToken cancellationToken = default)
     {
         paths.EnsureDirectories();
-        var stem = $"mdb-session-{DateTimeOffset.Now:yyyyMMdd-HHmmss}";
+        var stem = $"mdb-session-{DateTimeOffset.Now:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}";
         var textPath = Path.Combine(paths.Logs, stem + ".txt");
         var jsonPath = Path.Combine(paths.Logs, stem + ".json");
         await File.WriteAllTextAsync(textPath, MdbLogFormatter.ToText(entries), cancellationToken);

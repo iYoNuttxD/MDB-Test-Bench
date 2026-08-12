@@ -29,4 +29,73 @@ public sealed class JsonSettingsStoreTests
             if (File.Exists(path)) File.Delete(path);
         }
     }
+
+    [Fact]
+    public async Task InvalidJsonFallsBackToSafeDefaults()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"mdb-settings-{Guid.NewGuid():N}.json");
+        try
+        {
+            await File.WriteAllTextAsync(path, "{ invalid json");
+
+            var settings = await new JsonSettingsStore().LoadAsync(path);
+
+            Assert.Equal(TransportKind.Simulated, settings.SelectedTransport);
+            Assert.Equal(9_600, settings.BaudRate);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task OversizedSettingsFallBackWithoutAllocatingJsonGraph()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"mdb-settings-{Guid.NewGuid():N}.json");
+        try
+        {
+            await File.WriteAllBytesAsync(path, new byte[JsonSettingsStore.MaxSettingsFileBytes + 1]);
+
+            var settings = await new JsonSettingsStore().LoadAsync(path);
+
+            Assert.Equal(new AppSettings(), settings);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task SyntacticallyValidButUnsafeValuesAreNormalized()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"mdb-settings-{Guid.NewGuid():N}.json");
+        try
+        {
+            await File.WriteAllTextAsync(path, """
+                {
+                  "serialPort": null,
+                  "baudRate": -1,
+                  "dataBits": 99,
+                  "timeoutMilliseconds": 2147483647,
+                  "windowWidth": -100,
+                  "windowHeight": 999999
+                }
+                """);
+
+            var settings = await new JsonSettingsStore().LoadAsync(path);
+
+            Assert.Equal(string.Empty, settings.SerialPort);
+            Assert.Equal(9_600, settings.BaudRate);
+            Assert.Equal(8, settings.DataBits);
+            Assert.Equal(2_000, settings.TimeoutMilliseconds);
+            Assert.Equal(1_280, settings.WindowWidth);
+            Assert.Equal(800, settings.WindowHeight);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
 }

@@ -14,7 +14,7 @@
       <Grid RowDefinitions="Auto,28,*,Auto">
         <StackPanel>
           <TextBlock Text="MDB TEST BENCH" FontSize="19" FontWeight="Bold" />
-          <TextBlock Text="VMC / cashless validation · v0.1" Opacity="0.58" FontSize="11" />
+          <TextBlock Text="VMC / cashless validation · v0.1.0" Opacity="0.58" FontSize="11" />
         </StackPanel>
         <ItemsControl Grid.Row="2" ItemsSource="{Binding Pages}">
           <ItemsControl.ItemTemplate>

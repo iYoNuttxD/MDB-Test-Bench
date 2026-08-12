@@ -25,7 +25,7 @@ This formatter is entirely outside Core and does not claim to be the Wafer proto
 
 `WaferMdbRs232Transport` still requires an injected `IWaferProtocolCodec`. No default codec exists. Until a validated codec is implemented, the UI disables Structured hardware actions and exposes only confirmed Advanced / Adapter Debug raw exchange.
 
-`SimulatedCashlessTransport` implements both logical and raw development paths. It owns the state machine used by the UI and supports Normal, AlwaysApprove, AlwaysDeny, Timeout, MalformedResponse, and UnexpectedResponse behavior.
+`SimulatedCashlessTransport` implements both logical and raw development paths. It receives or creates a `VmcSimulator`, so the same Core state machine is exercised by UI flows and headless end-to-end tests. It supports Normal, AlwaysApprove, AlwaysDeny, Timeout, MalformedResponse, and UnexpectedResponse behavior.
 
 `MdbTestBench.TestEngine` executes typed JSON scenarios sequentially, reports expected/received values and duration, writes to the shared structured log sink, supports cancellation, and enforces scenario deadlines.
 
@@ -37,6 +37,12 @@ The logical lifecycle is Disconnected → Connected → Reset → Disabled → E
 
 All transport/test operations use `async`/`await` and `CancellationToken`. Stateful exchanges are serialized with semaphores. Transports implement `IAsyncDisposable`. No busy-wait, `Thread.Sleep`, database, cloud service, or web backend is used.
 
+In-memory traffic retention is bounded to 10,000 entries. Raw HEX and diagnostic payloads are bounded to 4,096 bytes, serial receive buffers are capped at 65,536 bytes, and scenarios are validated before execution.
+
 ## Persistence
 
-`AppPaths` resolves the operating system's per-user local application-data directory. Settings, window size, last profile, custom profiles, future custom scenarios, and exported logs live outside the application installation directory. A saved serial name is cleared from selection when discovery no longer returns it.
+`AppPaths` resolves the operating system's per-user local application-data directory. Settings, window size, last profile, custom profiles, future custom scenarios, and exports live outside the application installation directory. Custom profile storage and exported copies use separate directories. Imported JSON is size-limited, validated, and saved under generated identifiers; path containment is enforced for managed files. A saved serial name is cleared from selection when discovery no longer returns it.
+
+## Distribution boundary
+
+The application assembly is versioned as `0.1.0`. Publish scripts produce untrimmed, self-contained, single-file executables so reflective Avalonia behavior is preserved. macOS packaging adds only standard application-bundle metadata; it does not alter Core or transport behavior. Release automation and platform limitations are detailed in [RELEASING.md](RELEASING.md).

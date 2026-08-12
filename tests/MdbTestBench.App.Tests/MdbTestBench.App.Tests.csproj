@@ -6,7 +6,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/MdbTestBench.Core/MdbTestBench.Core.csproj" />
+    <ProjectReference Include="../../src/MdbTestBench.App/MdbTestBench.App.csproj" />
   </ItemGroup>
   <ItemGroup><Using Include="Xunit" /></ItemGroup>
 </Project>

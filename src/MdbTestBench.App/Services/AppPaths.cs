@@ -10,6 +10,7 @@ public sealed class AppPaths
         Profiles = Path.Combine(Root, "profiles");
         Scenarios = Path.Combine(Root, "scenarios");
         Logs = Path.Combine(Root, "logs");
+        Exports = Path.Combine(Root, "exports");
         Settings = Path.Combine(Root, "settings.json");
     }
 
@@ -17,6 +18,7 @@ public sealed class AppPaths
     public string Profiles { get; }
     public string Scenarios { get; }
     public string Logs { get; }
+    public string Exports { get; }
     public string Settings { get; }
 
     public void EnsureDirectories()
@@ -25,5 +27,6 @@ public sealed class AppPaths
         Directory.CreateDirectory(Profiles);
         Directory.CreateDirectory(Scenarios);
         Directory.CreateDirectory(Logs);
+        Directory.CreateDirectory(Exports);
     }
 }

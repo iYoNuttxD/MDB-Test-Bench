@@ -12,9 +12,17 @@ public sealed class ScenarioJsonSerializer
         Converters = { new JsonStringEnumConverter() }
     };
 
-    public TestScenario Deserialize(string json) =>
-        JsonSerializer.Deserialize<TestScenario>(json, Options)
-        ?? throw new JsonException("Scenario JSON did not contain an object.");
+    public TestScenario Deserialize(string json)
+    {
+        var scenario = JsonSerializer.Deserialize<TestScenario>(json, Options)
+            ?? throw new JsonException("Scenario JSON did not contain an object.");
+        TestScenarioValidator.EnsureValid(scenario);
+        return scenario;
+    }
 
-    public string Serialize(TestScenario scenario) => JsonSerializer.Serialize(scenario, Options);
+    public string Serialize(TestScenario scenario)
+    {
+        TestScenarioValidator.EnsureValid(scenario);
+        return JsonSerializer.Serialize(scenario, Options);
+    }
 }

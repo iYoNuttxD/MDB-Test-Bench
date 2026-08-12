@@ -1,6 +1,8 @@
 using MdbTestBench.Core.Protocol;
 using MdbTestBench.TestEngine.Models;
 using MdbTestBench.Transport.Simulation;
+using MdbTestBench.Transport.Abstractions;
+using MdbTestBench.Core.Protocol.Frames;
 
 namespace MdbTestBench.TestEngine.Tests;
 
@@ -49,6 +51,17 @@ public sealed class ScenarioRunnerTests
         Assert.Equal(TestRunStatus.Aborted, result.Status);
     }
 
+    [Fact]
+    public async Task TransportFailureBecomesControlledFailedResult()
+    {
+        await using var transport = new FailingTransport();
+
+        var result = await new ScenarioRunner(transport).RunAsync(CreateBasicScenario());
+
+        Assert.Equal(TestRunStatus.Failed, result.Status);
+        Assert.Contains("serial read failed", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static TestScenario CreateBasicScenario() => new()
     {
         Id = "basic-approved-vend",
@@ -64,4 +77,27 @@ public sealed class ScenarioRunnerTests
             new() { Name = "Session complete", Command = MdbCommandType.Vend, Subcommand = MdbSubcommandType.SessionComplete, ExpectedResponse = MdbResponseType.EndSession }
         ]
     };
+
+    private sealed class FailingTransport : IMdbTransport
+    {
+        public bool IsConnected { get; private set; }
+        public TransportCapabilities Capabilities { get; } = new()
+        {
+            Name = "failing test transport",
+            PollingMode = PollingMode.HostManaged
+        };
+        public Task ConnectAsync(CancellationToken cancellationToken = default)
+        {
+            IsConnected = true;
+            return Task.CompletedTask;
+        }
+        public Task DisconnectAsync(CancellationToken cancellationToken = default)
+        {
+            IsConnected = false;
+            return Task.CompletedTask;
+        }
+        public Task<MdbFrame> ExchangeAsync(MdbFrame request, CancellationToken cancellationToken = default) =>
+            throw new TransportException(TransportError.ReadFailure, "Serial read failed safely.");
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
 }

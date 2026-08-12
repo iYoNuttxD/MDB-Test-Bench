@@ -15,4 +15,6 @@ The semantic command builder deliberately produces no Wafer wire bytes. Price/pr
 
 The simulator supports initialization, approved and denied vending, cancellation, session completion, timeouts, malformed responses, unexpected responses, raw diagnostics, concurrency, and cancellation. Its output is always labelled SIMULATION.
 
+Release integration tests connect an injected Core `VmcSimulator` through `SimulatedCashlessTransport` to `ScenarioRunner`. These tests establish application behavior without hardware; they do not validate MDB electrical, timing, or adapter-wire conformance.
+
 This is not full MDB conformance. Exact field encoding, timing compliance, mode-bit handling, checksums, peripheral variants, and behaviors requiring authoritative specifications remain outside this version. A capability can be Unsupported, Supported, Experimental, or NotImplemented; listing it never asserts implementation.

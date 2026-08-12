@@ -40,4 +40,17 @@ public sealed class ProfileValidationTests
         Assert.Contains(errors, error => error.Contains("ID", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("name", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void NullMembersFromHostileJsonAreRejectedWithoutNullReferenceFailure()
+    {
+        const string json = """
+            { "id": "unsafe", "name": null, "description": null, "capabilities": null, "metadata": null }
+            """;
+
+        var exception = Assert.Throws<InvalidDataException>(() => new ProfileJsonSerializer().Deserialize(json));
+
+        Assert.Contains("name", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("capabilities", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

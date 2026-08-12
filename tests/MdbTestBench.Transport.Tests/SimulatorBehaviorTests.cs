@@ -32,4 +32,16 @@ public sealed class SimulatorBehaviorTests
         Assert.True(simulator.IsConnected);
         Assert.Equal(VmcState.Connected, simulator.State);
     }
+
+    [Fact]
+    public async Task RawPayloadOverTransportLimitIsRejected()
+    {
+        await using var simulator = new SimulatedCashlessTransport();
+        await simulator.ConnectAsync();
+
+        var exception = await Assert.ThrowsAsync<MdbTestBench.Transport.Abstractions.TransportException>(
+            () => simulator.ExchangeRawAsync(new byte[4_097]));
+
+        Assert.Equal(MdbTestBench.Transport.Abstractions.TransportError.InvalidData, exception.Error);
+    }
 }

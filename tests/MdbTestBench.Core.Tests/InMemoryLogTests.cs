@@ -5,6 +5,9 @@ namespace MdbTestBench.Core.Tests;
 
 public sealed class InMemoryLogTests
 {
+    private static MdbLogEntry Entry(string command) => new(DateTimeOffset.UtcNow, MdbDirection.Tx,
+        "VMC", "DUT", command, "test", ReadOnlyMemory<byte>.Empty, MdbLogSeverity.Information);
+
     [Fact]
     public async Task SinkCapturesClearsAndFormatsEntries()
     {
@@ -20,4 +23,20 @@ public sealed class InMemoryLogTests
         sink.Clear();
         Assert.Empty(sink.Snapshot());
     }
+
+    [Fact]
+    public async Task SinkRetainsOnlyConfiguredCapacity()
+    {
+        var sink = new InMemoryMdbLogSink(capacity: 2);
+
+        await sink.WriteAsync(Entry("one"));
+        await sink.WriteAsync(Entry("two"));
+        await sink.WriteAsync(Entry("three"));
+
+        Assert.Equal(["two", "three"], sink.Snapshot().Select(entry => entry.Command));
+    }
+
+    [Fact]
+    public void SinkRejectsInvalidCapacity() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => new InMemoryMdbLogSink(0));
 }

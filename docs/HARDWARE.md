@@ -20,3 +20,5 @@ The Settings page discovers whatever port names the operating system reports. Ty
 Defaults are 9600 baud, 8 data bits, no parity, one stop bit, adapter-managed polling, and a two-second timeout. They are test starting points, not confirmed properties of revision `2022061K5`.
 
 Before physical testing, verify voltage levels, cable pinout, ground, isolation, serial adapter driver, device permissions, and safe connection procedures with the hardware owner. Follow [TESTING_WITH_HARDWARE.md](TESTING_WITH_HARDWARE.md) and preserve traffic evidence.
+
+Self-contained desktop packages remove the .NET installation requirement but do not include USB-RS232 kernel drivers or operating-system permissions. Windows may require the adapter vendor's signed driver, macOS may require driver approval, and Linux users may need membership or udev policy for the serial device.

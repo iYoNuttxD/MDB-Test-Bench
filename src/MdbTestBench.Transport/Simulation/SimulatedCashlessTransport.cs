@@ -5,18 +5,41 @@ using MdbTestBench.Transport.Abstractions;
 
 namespace MdbTestBench.Transport.Simulation;
 
-public sealed class SimulatedCashlessTransport(
-    SimulatedCashlessOptions? options = null,
-    PollingMode pollingMode = PollingMode.HostManaged) : IMdbTransport, IRawCommandTransport
+public sealed class SimulatedCashlessTransport : IMdbTransport, IRawCommandTransport
 {
     private static readonly MdbAddress CashlessAddress = new(0x10, MdbDeviceType.CashlessDevice1);
-    private readonly SimulatedCashlessOptions _options = options ?? new();
-    private VmcStateMachine _stateMachine = new();
+    private readonly SimulatedCashlessOptions _options;
+    private readonly VmcSimulator _vmc;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private bool _disposed;
 
+    public SimulatedCashlessTransport(
+        SimulatedCashlessOptions? options = null,
+        PollingMode pollingMode = PollingMode.HostManaged,
+        VmcSimulator? vmcSimulator = null)
+    {
+        _options = options ?? new SimulatedCashlessOptions();
+        if (_options.ResponseDelay < TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(options), "Simulator response delay cannot be negative.");
+        if (_options.OperationTimeout <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(options), "Simulator timeout must be greater than zero.");
+        _vmc = vmcSimulator ?? new VmcSimulator();
+        Capabilities = new TransportCapabilities
+        {
+            Name = "Simulated cashless device",
+            RequiresPhysicalHardware = false,
+            PollingMode = pollingMode,
+            SupportedPollingModes = new HashSet<PollingMode>
+            {
+                PollingMode.AdapterManaged,
+                PollingMode.HostManaged
+            }
+        };
+    }
+
     public bool IsConnected { get; private set; }
-    public VmcState State => _stateMachine.State;
+    public VmcState State => _vmc.State;
+    public VmcSimulator Vmc => _vmc;
     public SimulatorBehavior Behavior => _options.Behavior;
 
     public bool CanExchange(MdbFrame request)
@@ -25,43 +48,41 @@ public sealed class SimulatedCashlessTransport(
         if (request.Command == MdbCommandType.Expansion) return true;
         if (request.Command == MdbCommandType.Setup && request.Subcommand == MdbSubcommandType.SetupMaxMinPrices &&
             State == VmcState.Disabled) return true;
-        return _stateMachine.CanFire(MapTrigger(request));
+        return _vmc.CanApply(MapTrigger(request));
     }
 
-    public TransportCapabilities Capabilities { get; } = new()
-    {
-        Name = "Simulated cashless device",
-        RequiresPhysicalHardware = false,
-        PollingMode = pollingMode,
-        SupportedPollingModes = new HashSet<PollingMode>
-        {
-            PollingMode.AdapterManaged,
-            PollingMode.HostManaged
-        }
-    };
+    public TransportCapabilities Capabilities { get; }
 
-    public Task ConnectAsync(CancellationToken cancellationToken = default)
+    public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        cancellationToken.ThrowIfCancellationRequested();
-        if (!IsConnected)
+        await _gate.WaitAsync(cancellationToken);
+        try
         {
-            if (_stateMachine.State != VmcState.Disconnected) _stateMachine = new VmcStateMachine();
-            _stateMachine.Fire(VmcTrigger.Connect);
-            IsConnected = true;
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!IsConnected)
+            {
+                if (_vmc.State != VmcState.Disconnected) _vmc.Restart();
+                _vmc.Apply(VmcTrigger.Connect);
+                IsConnected = true;
+            }
         }
-        return Task.CompletedTask;
+        finally { _gate.Release(); }
     }
 
-    public Task DisconnectAsync(CancellationToken cancellationToken = default)
+    public async Task DisconnectAsync(CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (IsConnected)
+        if (_disposed) return;
+        await _gate.WaitAsync(cancellationToken);
+        try
         {
-            _stateMachine.Fire(VmcTrigger.Disconnect);
-            IsConnected = false;
+            if (IsConnected)
+            {
+                _vmc.Apply(VmcTrigger.Disconnect);
+                IsConnected = false;
+            }
         }
-        return Task.CompletedTask;
+        finally { _gate.Release(); }
     }
 
     public async Task<MdbFrame> ExchangeAsync(MdbFrame request, CancellationToken cancellationToken = default)
@@ -106,8 +127,11 @@ public sealed class SimulatedCashlessTransport(
         ReadOnlyMemory<byte> payload,
         CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (!IsConnected) throw new TransportException(TransportError.Disconnected,
             "The simulator is not connected.");
+        if (payload.Length > 4_096)
+            throw new TransportException(TransportError.InvalidData, "Raw payload exceeds the 4096-byte transport limit.");
         using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutSource.CancelAfter(_options.OperationTimeout);
         try
@@ -155,7 +179,7 @@ public sealed class SimulatedCashlessTransport(
 
     private MdbResponseType ProcessVendRequest()
     {
-        _stateMachine.Fire(VmcTrigger.RequestVend);
+        _vmc.Apply(VmcTrigger.RequestVend);
         return _options.Behavior == SimulatorBehavior.AlwaysDeny
             ? Transition(VmcTrigger.DenyVend, MdbResponseType.VendDenied)
             : Transition(VmcTrigger.ApproveVend, MdbResponseType.VendApproved);
@@ -163,7 +187,7 @@ public sealed class SimulatedCashlessTransport(
 
     private MdbResponseType Transition(VmcTrigger trigger, MdbResponseType response)
     {
-        _stateMachine.Fire(trigger);
+        _vmc.Apply(trigger);
         return response;
     }
 
@@ -185,9 +209,18 @@ public sealed class SimulatedCashlessTransport(
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
-        if (IsConnected) await DisconnectAsync();
-        _gate.Dispose();
-        _disposed = true;
+        await _gate.WaitAsync();
+        try
+        {
+            if (_disposed) return;
+            if (IsConnected)
+            {
+                _vmc.Apply(VmcTrigger.Disconnect);
+                IsConnected = false;
+            }
+            _disposed = true;
+        }
+        finally { _gate.Release(); }
         GC.SuppressFinalize(this);
     }
 }

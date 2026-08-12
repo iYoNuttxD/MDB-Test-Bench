@@ -111,6 +111,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         _selectedPort = Ports.Contains(settings.SerialPort) ? settings.SerialPort : null;
 
         foreach (var profile in _profileRepository.LoadAll()) Profiles.Add(profile);
+        if (_profileRepository.LoadWarnings.Count > 0)
+            _profileMessage = $"{_profileRepository.LoadWarnings.Count} invalid custom profile file(s) were skipped.";
         SelectedProfile = Profiles.FirstOrDefault(profile => profile.Id == settings.LastProfileId) ?? Profiles.FirstOrDefault();
         foreach (var scenario in ScenarioCatalog.CreateBuiltIn()) Scenarios.Add(new ScenarioDisplayViewModel(scenario));
         SelectedScenario = Scenarios.FirstOrDefault();
