@@ -1,0 +1,14 @@
+{
+  "name": "MDB Level 1 baseline",
+  "baseLevel": "Level1",
+  "capabilities": {
+    "expansion": false,
+    "remoteVend": false,
+    "revalue": false,
+    "multiCurrency": false,
+    "extensions": {}
+  },
+  "metadata": {
+    "status": "baseline; validate against target hardware"
+  }
+}

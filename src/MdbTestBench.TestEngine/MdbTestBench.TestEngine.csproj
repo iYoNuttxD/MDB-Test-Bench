@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../MdbTestBench.Core/MdbTestBench.Core.csproj" />
+    <ProjectReference Include="../MdbTestBench.Transport/MdbTestBench.Transport.csproj" />
+  </ItemGroup>
+</Project>

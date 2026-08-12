@@ -1,0 +1,14 @@
+{
+  "name": "Example hybrid machine",
+  "baseLevel": "Level1",
+  "capabilities": {
+    "expansion": true,
+    "remoteVend": true,
+    "revalue": false,
+    "multiCurrency": false,
+    "extensions": {}
+  },
+  "metadata": {
+    "purpose": "example only; not a claim about a real machine"
+  }
+}

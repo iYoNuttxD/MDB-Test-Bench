@@ -1,0 +1,14 @@
+{
+  "name": "MDB Level 3 baseline",
+  "baseLevel": "Level3",
+  "capabilities": {
+    "expansion": true,
+    "remoteVend": false,
+    "revalue": false,
+    "multiCurrency": false,
+    "extensions": {}
+  },
+  "metadata": {
+    "status": "baseline; no unconfirmed feature is enabled"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "MDB Level 2 baseline",
+  "baseLevel": "Level2",
+  "capabilities": {
+    "expansion": true,
+    "remoteVend": false,
+    "revalue": false,
+    "multiCurrency": false,
+    "extensions": {}
+  },
+  "metadata": {
+    "status": "baseline; capabilities are independently configurable"
+  }
+}

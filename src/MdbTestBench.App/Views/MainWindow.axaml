@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MdbTestBench.App.ViewModels"
+        x:Class="MdbTestBench.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="MDB Test Bench"
+        Width="1100"
+        Height="700"
+        MinWidth="820"
+        MinHeight="520">
+  <Grid ColumnDefinitions="240,*">
+    <Border Background="#172033" Padding="20">
+      <Grid RowDefinitions="Auto,24,*,Auto">
+        <StackPanel>
+          <TextBlock Text="MDB TEST BENCH" FontSize="20" FontWeight="Bold" />
+          <TextBlock Text="VMC Simulator · v0.1" Opacity="0.65" />
+        </StackPanel>
+
+        <ItemsControl Grid.Row="2" ItemsSource="{Binding Pages}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:NavigationItemViewModel">
+              <Button Content="{Binding Title}"
+                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NavigateCommand}"
+                      CommandParameter="{Binding}"
+                      HorizontalContentAlignment="Left"
+                      Margin="0,0,0,8"
+                      Padding="14,10" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <StackPanel Grid.Row="3">
+          <TextBlock Text="TRANSPORT" FontSize="11" Opacity="0.55" />
+          <TextBlock Text="{Binding Settings.SelectedTransport}" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding ConnectionStatus}" TextWrapping="Wrap" Opacity="0.65" FontSize="12" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Column="1" Margin="42" RowDefinitions="Auto,24,*">
+      <StackPanel>
+        <TextBlock Text="{Binding SelectedPage.Title}" FontSize="32" FontWeight="Bold" />
+        <TextBlock Text="{Binding SelectedPage.Description}" FontSize="16" Opacity="0.7" />
+      </StackPanel>
+
+      <Border Grid.Row="2" Background="#202B40" CornerRadius="12" Padding="28">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+          <TextBlock Text="{Binding SelectedPage.Title}" FontSize="24" HorizontalAlignment="Center" />
+          <TextBlock Text="Shell funcional — recursos serão conectados incrementalmente."
+                     TextWrapping="Wrap" TextAlignment="Center" Opacity="0.65" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>
