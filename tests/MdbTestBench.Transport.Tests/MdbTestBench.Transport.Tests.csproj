@@ -9,4 +9,7 @@
     <ProjectReference Include="../../src/MdbTestBench.Transport/MdbTestBench.Transport.csproj" />
   </ItemGroup>
   <ItemGroup><Using Include="Xunit" /></ItemGroup>
+  <ItemGroup>
+    <None Include="../fixtures/simulated-approved-vend.mdbcap.json" Link="fixtures/simulated-approved-vend.mdbcap.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

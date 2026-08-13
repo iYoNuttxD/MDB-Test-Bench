@@ -8,20 +8,20 @@
           <Border Classes="card">
             <StackPanel Spacing="10">
               <TextBlock Classes="label" Text="SEMANTIC COMMAND" />
-              <ComboBox ItemsSource="{Binding ManualCommandOptions}" SelectedItem="{Binding SelectedManualCommand}" />
+              <ComboBox ItemsSource="{Binding Manual.CommandOptions}" SelectedItem="{Binding Manual.SelectedCommand}" />
               <TextBlock Classes="label" Text="CASHLESS DEVICE" />
-              <ComboBox ItemsSource="{Binding CashlessDeviceOptions}" SelectedItem="{Binding SelectedCashlessDevice}" />
+              <ComboBox ItemsSource="{Binding Manual.DeviceOptions}" SelectedItem="{Binding Manual.SelectedDevice}" />
               <TextBlock Classes="label" Text="PRICE" />
-              <TextBox Text="{Binding ManualPrice}" PlaceholderText="5.00" />
+              <TextBox Text="{Binding Manual.Price}" PlaceholderText="5.00" />
               <TextBlock Classes="label" Text="PRODUCT NUMBER" />
-              <TextBox Text="{Binding ManualProduct}" PlaceholderText="0001" />
+              <TextBox Text="{Binding Manual.Product}" PlaceholderText="0001" />
               <TextBlock Classes="label" Text="CURRENCY / VALUE" />
-              <TextBox Text="{Binding ManualValue}" PlaceholderText="Optional" />
+              <TextBox Text="{Binding Manual.Value}" PlaceholderText="Optional" />
               <TextBlock Text="Manual simulator values use scale factor 1 and 2 decimal places until Reader Config negotiation is wired to the session." Foreground="#93A1B5" TextWrapping="Wrap" />
-              <Button Classes="primary" Content="Send structured command" Command="{Binding SendStructuredCommand}"
-                      IsEnabled="{Binding CanUseStructured}" HorizontalAlignment="Stretch" />
+              <Button Classes="primary" Content="Send structured command" Command="{Binding Manual.SendStructuredCommand}"
+                      IsEnabled="{Binding Manual.CanUseStructured}" HorizontalAlignment="Stretch" />
               <TextBlock IsVisible="{Binding IsHardwareSelected}"
-                         Text="Structured hardware commands remain disabled until a validated Wafer codec exists."
+                         Text="Wafer codec not validated. Structured hardware sending is disabled; use Wafer Discovery for hardware analysis."
                          Foreground="#FFD166" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
@@ -29,16 +29,16 @@
             <Border Classes="card">
               <StackPanel Spacing="10">
                 <TextBlock Classes="label" Text="SEMANTIC + RAW MDB PREVIEW" />
-                <TextBlock Classes="mono" Text="{Binding ManualPreview}" TextWrapping="Wrap" FontSize="15" />
+                <TextBlock Classes="mono" Text="{Binding Manual.Preview}" TextWrapping="Wrap" FontSize="15" />
                 <TextBlock Text="MDB bytes include the MDB checksum. They are not Wafer serial framing." Foreground="#FFD166" />
               </StackPanel>
             </Border>
             <Border Classes="card">
               <StackPanel Spacing="8">
                 <TextBlock Classes="label" Text="STATE MACHINE" />
-                <TextBlock Classes="value" Text="{Binding CurrentState}" />
+                <TextBlock Classes="value" Text="{Binding Manual.CurrentState}" />
                 <TextBlock Text="Incompatible commands are blocked before transport exchange." Foreground="#93A1B5" />
-                <TextBlock Text="{Binding ManualMessage}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Manual.Message}" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -48,15 +48,15 @@
         <Border Classes="card" Margin="0,18,0,0" MaxWidth="850" HorizontalAlignment="Left">
           <StackPanel Spacing="12">
             <TextBlock Text="ADVANCED / ADAPTER DEBUG" Foreground="#FFD166" FontWeight="Bold" />
-            <TextBlock Text="RAW ADAPTER / WAFER — these bytes are sent through the selected serial wire format. Raw MDB is shown separately in Structured preview. No Wafer framing is added."
+            <TextBlock Text="Simulator raw diagnostic only. Hardware Raw Adapter moved to Wafer Discovery so every physical TX is recorded in Capture."
                        TextWrapping="Wrap" Foreground="#93A1B5" />
-            <TextBox Text="{Binding RawHex}" PlaceholderText="Example: 01 A0 FF" AcceptsReturn="True" MinHeight="90"
+            <TextBox Text="{Binding Manual.RawHex}" PlaceholderText="Example: 01 A0 FF" AcceptsReturn="True" MinHeight="90"
                      FontFamily="Menlo,Consolas,monospace" />
-            <TextBlock Classes="mono" Text="{Binding RawValidation}" TextWrapping="Wrap" />
-            <CheckBox Content="I reviewed and confirm this raw payload" IsChecked="{Binding RawConfirmed}" />
+            <TextBlock Classes="mono" Text="{Binding Manual.RawValidation}" TextWrapping="Wrap" />
+            <CheckBox Content="I reviewed and confirm this simulator raw payload" IsChecked="{Binding Manual.RawConfirmed}" />
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <Button Classes="primary" Content="Send raw payload" Command="{Binding SendRawCommand}" />
-              <TextBlock Text="{Binding ManualMessage}" VerticalAlignment="Center" TextWrapping="Wrap" />
+              <Button Classes="primary" Content="Send simulator raw payload" Command="{Binding Manual.SendRawCommand}" IsEnabled="{Binding Manual.CanUseRaw}" />
+              <TextBlock Text="{Binding Manual.Message}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </StackPanel>
         </Border>

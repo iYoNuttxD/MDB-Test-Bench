@@ -2,6 +2,14 @@
 
 Status definitions: **Implemented** means the listed v0.1.1 shape is encoded/decoded and covered by normative vectors; **Partial** means a confirmed subset exists; **Experimental** requires negotiated capabilities or physical verification; **Not Implemented** means no frame is generated.
 
+Layer status is deliberately separate from Feature Level:
+
+| Feature Level | Encoder | Decoder | Simulator | Physical Wafer |
+|---|---|---|---|---|
+| Level 1 | Implemented for rows below | Implemented for rows below | Implemented for v0.1.1 flows | Pending codec and bench validation |
+| Level 2 | Partial, including Revalue | Partial typed response set | Partial | Pending codec and bench validation |
+| Level 3 | Partial/experimental, capability-gated | Partial, expanded mode explicit | Partial | Pending codec and bench validation |
+
 | Command / response family | L1 | L2 | L3 | Encoder | Decoder | Tests | Status |
 |---|---|---|---|---|---|---|---|
 | Addressing Cashless #1 / #2 | Yes | Yes | Yes | Yes | Yes | Yes | Implemented |

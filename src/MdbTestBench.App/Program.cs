@@ -20,7 +20,7 @@ internal static class Program
         if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase))
             return RunSmokeTestAsync().GetAwaiter().GetResult();
         if (args.Contains("--discovery-smoke-test", StringComparer.OrdinalIgnoreCase))
-            return RunDiscoverySmokeTestAsync().GetAwaiter().GetResult();
+            return RunDiscoverySmokeTestAsync(GetOption(args, "--capture-output=")).GetAwaiter().GetResult();
 
         var paths = new AppPaths();
         paths.EnsureDirectories();
@@ -57,7 +57,10 @@ internal static class Program
         return reset.Response == MdbResponseType.Ack && poll.Response == MdbResponseType.JustReset ? 0 : 1;
     }
 
-    private static async Task<int> RunDiscoverySmokeTestAsync()
+    private static string? GetOption(IEnumerable<string> args, string prefix) =>
+        args.FirstOrDefault(argument => argument.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..];
+
+    private static async Task<int> RunDiscoverySmokeTestAsync(string? outputPath)
     {
         var directory = Path.Combine(Path.GetTempPath(), "mdb-discovery-smoke-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -79,7 +82,11 @@ internal static class Program
             await controller.SendAsync(new byte[] { 0x10 }, new SerialWireFormatOptions(), "SmokeRawTx");
             await Task.Delay(50);
             var artifact = await controller.StopAsync();
-            var path = Path.Combine(directory, "smoke.mdbcap.json");
+            var path = string.IsNullOrWhiteSpace(outputPath)
+                ? Path.Combine(directory, "smoke.mdbcap.json")
+                : Path.GetFullPath(outputPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)
+                ?? throw new InvalidOperationException("Capture output path must include a directory."));
             var serializer = new WaferCaptureSerializer();
             await serializer.ExportAsync(artifact, path);
             var imported = await serializer.LoadAsync(path);

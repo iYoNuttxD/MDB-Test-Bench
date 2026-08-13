@@ -58,6 +58,6 @@ Markers use `type: "marker"` and `text`. Errors use `type: "error"`, `errorKind`
 
 ## Validation limits
 
-The importer validates format identity/version, required sections, maximum file size, maximum event count (1,000,000 by default), strictly increasing sequence, UTC/event values, monotonic frequency, capture bounds, raw length, HEX syntax, Base64 syntax, and HEX/Base64 equality. Invalid files produce a user-facing error and are never replayed.
+The importer validates format identity/version, required sections, application identity, serial ranges, maximum file size, maximum event count (1,000,000 by default), strictly increasing sequence, non-regressing monotonic timestamps, event operation/timing metadata, raw direction, capture bounds, raw length, HEX syntax, Base64 syntax, and HEX/Base64 equality. Invalid files produce a user-facing error and are never replayed.
 
-The JSON is the source of truth. The optional `.txt` export is human-readable summary only. See [`examples/wafer-discovery-example.mdbcap.json`](examples/wafer-discovery-example.mdbcap.json) for a complete v1 example.
+The JSON is the source of truth. The optional `.txt` export is human-readable summary only. Import/reanalysis never retransmits events. `tests/fixtures/simulated-approved-vend.mdbcap.json` is a synthetic golden fixture used to prove event ordering and byte-exact export/import across fresh serializer instances. See [`examples/wafer-discovery-example.mdbcap.json`](examples/wafer-discovery-example.mdbcap.json) for another complete v1 example.

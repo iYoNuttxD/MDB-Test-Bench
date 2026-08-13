@@ -33,7 +33,7 @@ The official NAMA-hosted PDF has an edition-label inconsistency worth preserving
 
 ## Test-vector provenance
 
-The byte vectors in `MdbCashlessEncoderTests`, `MdbCashlessDecoderTests`, and `MdbCashlessRoundTripTests` are calculated directly from the field tables above and the Section 2 checksum rule. They are not Wafer captures and do not include proprietary adapter framing. Currency and scale examples reproduce the normative numeric examples in Section 7.4.2.
+The byte vectors in `MdbCashlessEncoderTests`, `MdbCashlessDecoderTests`, and `MdbCashlessRoundTripTests` are calculated directly from the field tables above and the Section 2 checksum rule. They are not Wafer captures and do not include proprietary adapter framing. Currency and scale examples reproduce the normative numeric examples in Section 7.4.2. `tests/fixtures/simulated-approved-vend.mdbcap.json` is a synthetic regression fixture assembled from those tested MDB blocks; it is explicitly marked synthetic and is not physical evidence.
 
 ## Intentionally incomplete
 

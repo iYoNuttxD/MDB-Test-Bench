@@ -12,7 +12,7 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
 {
     private readonly SemaphoreSlim _operationGate = new(1, 1);
     private SimulatedCashlessTransport? _logicalTransport;
-    private IRawCommandTransport? _rawTransport;
+    private SimulatedCashlessTransport? _rawTransport;
     private SerialTransport? _serial;
     private bool _disposed;
 
@@ -77,11 +77,6 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
                 throw;
             }
             _serial = serial;
-            _rawTransport = new SerialDiagnosticTransport(serial, new SerialWireFormatOptions
-            {
-                Format = settings.WireFormat,
-                Terminator = settings.AsciiHexTerminator
-            }, serialSettings.OperationTimeout);
             await WriteStatusAsync($"Serial adapter connected on {settings.SerialPort}; logical Wafer codec unavailable",
                 MdbLogSeverity.Warning, cancellationToken);
         }
@@ -146,7 +141,9 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
         await _operationGate.WaitAsync(cancellationToken);
         try
         {
-            if (_rawTransport is null) throw new InvalidOperationException("Connect a transport before sending raw data.");
+            if (_logicalTransport is not SimulatedCashlessTransport || _rawTransport is null)
+                throw new InvalidOperationException(
+                    "Hardware Raw Adapter transmission is available only in Wafer Discovery so every TX is confirmed and captured.");
             await logs.WriteAsync(new MdbLogEntry(DateTimeOffset.UtcNow, MdbDirection.Tx, "VMC", "Adapter",
                 "RAW", "Advanced / Adapter Debug", payload, MdbLogSeverity.Warning), cancellationToken);
             var result = await _rawTransport.ExchangeRawAsync(payload, cancellationToken);

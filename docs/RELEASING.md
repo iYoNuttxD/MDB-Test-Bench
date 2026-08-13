@@ -62,10 +62,18 @@ Replace `linux-x64` with `win-x64`, `osx-arm64`, or `osx-x64`. The packaging scr
 1. Extract the package into a new temporary directory.
 2. Confirm the archive contains the expected executable or `.app`, not absolute paths.
 3. Run `MDB-Test-Bench --smoke-test` and require exit code zero.
-4. Start the GUI normally; verify all six navigation pages.
+4. Start the GUI normally; verify all seven navigation pages.
 5. Connect the Simulator, execute L1 Initialization and Approved Vend, cancel a running timeout scenario, validate raw HEX rejection, export logs, and restart to verify settings.
 6. Confirm SIMULATION remains visibly labelled and no serial port opens on startup.
 7. On a native machine for every target, repeat launch and smoke testing. Cross-publish alone is not native runtime validation.
+
+For the capture-format gate, generate and immediately re-import a simulator sample:
+
+```bash
+MDB-Test-Bench --discovery-smoke-test --capture-output=/absolute/path/sample-simulator.mdbcap.json
+```
+
+Retain this file only as simulator evidence; it must not be described as a Wafer capture.
 
 ## macOS signing and notarization
 

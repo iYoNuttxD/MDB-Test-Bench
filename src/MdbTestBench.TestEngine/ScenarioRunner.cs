@@ -2,6 +2,7 @@ using System.Diagnostics;
 using MdbTestBench.Core.Logging;
 using MdbTestBench.Core.Protocol;
 using MdbTestBench.Core.Protocol.Commands;
+using MdbTestBench.Core.Protocol.Cashless;
 using MdbTestBench.Core.Protocol.Frames;
 using MdbTestBench.Core.Protocol.Encoding;
 using MdbTestBench.TestEngine.Models;
@@ -9,11 +10,15 @@ using MdbTestBench.Transport.Abstractions;
 
 namespace MdbTestBench.TestEngine;
 
-public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink = null)
+public sealed class ScenarioRunner(
+    IMdbTransport transport,
+    IMdbLogSink? logSink = null,
+    IMdbCashlessEncoder? encoder = null)
 {
     private static readonly MdbAddress VmcAddress = MdbAddress.Vmc;
     private static readonly MdbAddress CashlessAddress = new(0x10, MdbDeviceType.CashlessDevice1);
     private readonly IMdbLogSink _logSink = logSink ?? new NullMdbLogSink();
+    private readonly IMdbCashlessEncoder _encoder = encoder ?? new MdbCashlessEncoder();
     public event EventHandler<TestStepResult>? StepCompleted;
 
     public async Task<TestRunResult> RunAsync(
@@ -127,7 +132,7 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
         return result.Bytes;
     }
 
-    private static MdbFrame BuildRequest(TestStep step, MdbFeatureLevel featureLevel)
+    private MdbFrame BuildRequest(TestStep step, MdbFeatureLevel featureLevel)
     {
         if (!string.IsNullOrWhiteSpace(step.PayloadHex))
             return MdbFrame.CommandFrame(VmcAddress, CashlessAddress, step.Command, step.Subcommand,
@@ -157,6 +162,6 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
             kind is ManualCommandKind.VendRequest or ManualCommandKind.CashSale ? 5.00m : null,
             kind is ManualCommandKind.VendRequest or ManualCommandKind.VendSuccess or ManualCommandKind.CashSale ? 1 : null,
             kind == ManualCommandKind.RevalueRequest ? 1.00m : null,
-            FeatureLevel: featureLevel)).Frame;
+            FeatureLevel: featureLevel), _encoder).Frame;
     }
 }

@@ -65,6 +65,18 @@ public sealed class WaferCaptureSerializer
         return document;
     }
 
+    public async Task ExportDocumentAsync(WaferCaptureDocument document, string path,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        Validate(document, WaferCaptureFormat.DefaultMaximumImportedEvents);
+        EnsureSafeOutputPath(path);
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        await JsonSerializer.SerializeAsync(stream, document with { PrivacySafe = true }, JsonOptions, cancellationToken);
+    }
+
     public async Task ExportSummaryAsync(WaferCaptureDocument document, string path, CancellationToken cancellationToken = default)
     {
         EnsureSafeOutputPath(path);
@@ -96,25 +108,47 @@ public sealed class WaferCaptureSerializer
 
     public static void Validate(WaferCaptureDocument document, int maximumEvents)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumEvents);
         if (document.Application is null || document.Adapter is null || document.Host is null ||
-            document.Serial is null || document.Capture is null || document.Events is null)
+            document.Serial is null || document.Capture is null || document.Probes is null ||
+            document.Statistics is null || document.Events is null)
             throw new InvalidDataException("Capture is missing a required schema section.");
         if (!string.Equals(document.Format, WaferCaptureFormat.Name, StringComparison.Ordinal))
             throw new InvalidDataException("File is not an MDB Test Bench capture.");
         if (document.FormatVersion != WaferCaptureFormat.Version)
             throw new NotSupportedException($"Capture format version {document.FormatVersion} is not supported.");
         if (string.IsNullOrWhiteSpace(document.CaptureId)) throw new InvalidDataException("Capture ID is required.");
+        if (string.IsNullOrWhiteSpace(document.Application.Name) || string.IsNullOrWhiteSpace(document.Application.Version))
+            throw new InvalidDataException("Capture application name and version are required.");
+        if (document.Serial.BaudRate <= 0 || document.Serial.DataBits is < 5 or > 8 ||
+            document.Serial.ReadTimeoutMilliseconds < 0 || document.Serial.WriteTimeoutMilliseconds < 0)
+            throw new InvalidDataException("Capture serial configuration is invalid.");
         if (document.Events.Count > maximumEvents) throw new InvalidDataException("Capture contains too many events.");
         if (document.Capture.MonotonicFrequency <= 0) throw new InvalidDataException("Monotonic clock frequency is invalid.");
+        if (document.Capture.CreatedAtUtc == default || document.Capture.StartedAtUtc == default)
+            throw new InvalidDataException("Capture creation and start timestamps are required.");
         if (document.Capture.EndedAtUtc < document.Capture.StartedAtUtc) throw new InvalidDataException("Capture end precedes start.");
         long previousSequence = 0;
+        long previousMonotonicTimestamp = -1;
         foreach (var item in document.Events)
         {
             if (item.Sequence <= previousSequence) throw new InvalidDataException("Event sequence is not strictly increasing.");
             previousSequence = item.Sequence;
             if (item.TimestampUtc == default) throw new InvalidDataException($"Event {item.Sequence} has no UTC timestamp.");
             if (item.MonotonicTimestamp < 0) throw new InvalidDataException($"Event {item.Sequence} has an invalid monotonic timestamp.");
-            if (item.IsRaw) _ = item.GetRawBytes();
+            if (item.MonotonicTimestamp < previousMonotonicTimestamp)
+                throw new InvalidDataException($"Event {item.Sequence} has a regressing monotonic timestamp.");
+            previousMonotonicTimestamp = item.MonotonicTimestamp;
+            if (string.IsNullOrWhiteSpace(item.Operation))
+                throw new InvalidDataException($"Event {item.Sequence} has no operation.");
+            if (item.DeltaMicroseconds < 0 || item.OperationDurationMicroseconds < 0 ||
+                item.GapFromPreviousRxMicroseconds < 0 || item.ReadChunkIndex <= 0)
+                throw new InvalidDataException($"Event {item.Sequence} has invalid timing metadata.");
+            if (item.IsRaw)
+            {
+                if (item.Direction is null) throw new InvalidDataException($"Raw event {item.Sequence} has no direction.");
+                _ = item.GetRawBytes();
+            }
             else if (item.Length != 0 || item.Hex is not null || item.Base64 is not null)
                 throw new InvalidDataException($"Non-raw event {item.Sequence} contains raw byte fields.");
         }

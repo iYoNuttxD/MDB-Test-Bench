@@ -9,6 +9,8 @@ public sealed class WaferDiscoveryCaptureController : IAsyncDisposable
     private readonly IRawByteTransport _transport;
     private readonly WaferCaptureRecorder _recorder;
     private readonly CancellationTokenSource _readCancellation = new();
+    private readonly SemaphoreSlim _stopGate = new(1, 1);
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
     private Task? _readTask;
     private bool _started;
     private bool _stopped;
@@ -50,11 +52,12 @@ public sealed class WaferDiscoveryCaptureController : IAsyncDisposable
     public async Task SendAsync(ReadOnlyMemory<byte> logicalBytes, SerialWireFormatOptions options, string operation,
         CancellationToken cancellationToken = default)
     {
-        if (!IsCapturing) throw new InvalidOperationException("Start capture before transmitting.");
-        var onWire = SerialWireFormatter.Encode(logicalBytes.Span, options);
-        var started = Stopwatch.GetTimestamp();
+        await _writeGate.WaitAsync(cancellationToken);
         try
         {
+            if (!IsCapturing) throw new InvalidOperationException("Start capture before transmitting.");
+            var onWire = SerialWireFormatter.Encode(logicalBytes.Span, options);
+            var started = Stopwatch.GetTimestamp();
             await _transport.WriteAsync(onWire, cancellationToken);
             await _recorder.RecordRawAsync(WaferCaptureDirection.Tx, onWire, operation, started,
                 Stopwatch.GetTimestamp(), "Open", cancellationToken);
@@ -64,31 +67,43 @@ public sealed class WaferDiscoveryCaptureController : IAsyncDisposable
             await TryRecordErrorAsync(Classify(exception), SafeMessage(exception), CancellationToken.None);
             throw;
         }
+        finally { _writeGate.Release(); }
     }
 
-    public Task AddMarkerAsync(string text, CancellationToken cancellationToken = default) =>
-        _recorder.AddMarkerAsync(text, cancellationToken);
+    public Task AddMarkerAsync(string text, CancellationToken cancellationToken = default) => IsCapturing
+        ? _recorder.AddMarkerAsync(text, cancellationToken)
+        : throw new InvalidOperationException("Start capture before adding a marker.");
 
     public void AddProbe(WaferProbe probe) => _recorder.AddProbe(probe);
 
     public async Task<WaferCaptureArtifact> StopAsync(CancellationToken cancellationToken = default)
     {
-        if (!_started) throw new InvalidOperationException("Capture has not started.");
-        if (_finalized) return _artifact!;
-        _stopped = true;
-        _readCancellation.Cancel();
-        if (_readTask is not null)
+        await _stopGate.WaitAsync(cancellationToken);
+        try
         {
-            try { await _readTask; }
-            catch (OperationCanceledException) { }
+            if (!_started) throw new InvalidOperationException("Capture has not started.");
+            if (_finalized) return _artifact!;
+            _stopped = true;
+            _readCancellation.Cancel();
+            if (_readTask is not null)
+            {
+                try { await _readTask; }
+                catch (OperationCanceledException) { }
+            }
+            await _writeGate.WaitAsync(cancellationToken);
+            try
+            {
+                try { await _transport.DisconnectAsync(cancellationToken); }
+                catch (Exception exception) { await TryRecordErrorAsync(Classify(exception), SafeMessage(exception), CancellationToken.None); }
+            }
+            finally { _writeGate.Release(); }
+            try { await _recorder.RecordTransportStateAsync("SerialClosed", cancellationToken); }
+            catch (InvalidOperationException) when (_recorder.SizeLimitReached) { }
+            _artifact = await _recorder.StopAsync(cancellationToken);
+            _finalized = true;
+            return _artifact;
         }
-        try { await _transport.DisconnectAsync(cancellationToken); }
-        catch (Exception exception) { await TryRecordErrorAsync(Classify(exception), SafeMessage(exception), CancellationToken.None); }
-        try { await _recorder.RecordTransportStateAsync("SerialClosed", cancellationToken); }
-        catch (InvalidOperationException) when (_recorder.SizeLimitReached) { }
-        _artifact = await _recorder.StopAsync(cancellationToken);
-        _finalized = true;
-        return _artifact;
+        finally { _stopGate.Release(); }
     }
 
     private async Task ReadLoopAsync(CancellationToken cancellationToken)
@@ -152,6 +167,8 @@ public sealed class WaferDiscoveryCaptureController : IAsyncDisposable
         _readCancellation.Dispose();
         await _transport.DisposeAsync();
         await _recorder.DisposeAsync();
+        _writeGate.Dispose();
+        _stopGate.Dispose();
         GC.SuppressFinalize(this);
     }
 }

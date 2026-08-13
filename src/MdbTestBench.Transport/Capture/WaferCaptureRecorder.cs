@@ -15,12 +15,14 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
     private readonly long _maximumBytes;
     private readonly WaferCaptureInterpreter _interpreter;
     private readonly List<WaferProbe> _probes = [];
+    private readonly object _probeGate = new();
     private long _sequence;
     private long _previousTick;
     private long _previousRxTick;
     private long _readChunkIndex;
     private bool _stopped;
     private bool _disposed;
+    private WaferCaptureArtifact? _artifact;
 
     private WaferCaptureRecorder(WaferCaptureDocument header, string spoolPath, long maximumBytes,
         WaferCaptureInterpreter interpreter, StreamWriter writer)
@@ -80,7 +82,7 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
     public void AddProbe(WaferProbe probe)
     {
         ArgumentNullException.ThrowIfNull(probe);
-        _probes.Add(probe);
+        lock (_probeGate) _probes.Add(probe);
     }
 
     public async Task<WaferCaptureArtifact> StopAsync(CancellationToken cancellationToken = default)
@@ -88,20 +90,24 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
         await _gate.WaitAsync(cancellationToken);
         try
         {
+            if (_artifact is not null) return _artifact;
             if (!_stopped)
             {
                 await _writer.FlushAsync(cancellationToken);
                 _stopped = true;
             }
             var timing = _header.Capture with { EndedAtUtc = DateTimeOffset.UtcNow };
+            WaferProbe[] probes;
+            lock (_probeGate) probes = _probes.ToArray();
             var completed = _header with
             {
                 Capture = timing,
-                Probes = _probes.ToArray(),
+                Probes = probes,
                 Statistics = new WaferCaptureAnalyzer().Analyze(ReadSpoolEvents(), timing),
                 Events = []
             };
-            return new(completed, EventSpoolPath, CaptureSizeBytes, SizeLimitReached);
+            _artifact = new(completed, EventSpoolPath, CaptureSizeBytes, SizeLimitReached);
+            return _artifact;
         }
         finally { _gate.Release(); }
     }
@@ -121,6 +127,7 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
 
     private async Task AppendAsync(WaferCaptureEvent item, CancellationToken cancellationToken)
     {
+        WaferCaptureEvent? recorded = null;
         await _gate.WaitAsync(cancellationToken);
         try
         {
@@ -145,9 +152,10 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
             }
             await _writer.WriteLineAsync(line.AsMemory(), cancellationToken);
             CaptureSizeBytes += addedBytes;
-            EventRecorded?.Invoke(this, item);
+            recorded = item;
         }
         finally { _gate.Release(); }
+        if (recorded is not null) NotifyEventRecorded(recorded);
     }
 
     private long NextSequence() => Interlocked.Increment(ref _sequence);
@@ -162,6 +170,15 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
         return previous == 0 ? null : ToMicroseconds(tick - previous);
     }
     private static double ToMicroseconds(long ticks) => ticks * 1_000_000d / Stopwatch.Frequency;
+
+    private void NotifyEventRecorded(WaferCaptureEvent recorded)
+    {
+        foreach (EventHandler<WaferCaptureEvent> handler in EventRecorded?.GetInvocationList() ?? [])
+        {
+            try { handler(this, recorded); }
+            catch (Exception) { /* A presentation subscriber must never corrupt or stop raw evidence capture. */ }
+        }
+    }
 
     private IEnumerable<WaferCaptureEvent> ReadSpoolEvents()
     {

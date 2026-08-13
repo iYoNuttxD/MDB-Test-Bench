@@ -40,16 +40,35 @@
           <StackPanel Spacing="8">
             <TextBlock Classes="label" Text="SESSION" />
             <TextBlock Classes="value" Text="{Binding CurrentState}" />
-            <TextBlock Text="{Binding LastCommand, StringFormat='Last command  ·  {0}'}" />
-            <TextBlock Text="{Binding LastResponse, StringFormat='Last response  ·  {0}'}" />
+            <TextBlock Text="{Binding Manual.LastCommand, StringFormat='Last command  ·  {0}'}" />
+            <TextBlock Text="{Binding Manual.LastResponse, StringFormat='Last response  ·  {0}'}" />
             <TextBlock Text="{Binding LastError, StringFormat='Errors  ·  {0}'}" TextWrapping="Wrap" Foreground="#F08A91" />
           </StackPanel>
         </Border>
       </WrapPanel>
       <Border Classes="card">
+        <StackPanel Spacing="9">
+          <TextBlock Classes="label" Text="PROTOCOL SUPPORT · MDB CASHLESS" />
+          <ItemsControl ItemsSource="{Binding ProtocolSupport}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ProtocolSupportViewModel">
+                <Grid ColumnDefinitions="90,*,*,*,1.4*" Margin="0,4">
+                  <TextBlock Text="{Binding FeatureLevel}" FontWeight="Bold" />
+                  <TextBlock Grid.Column="1" Text="{Binding Encoder, StringFormat='Encoder: {0}'}" />
+                  <TextBlock Grid.Column="2" Text="{Binding Decoder, StringFormat='Decoder: {0}'}" />
+                  <TextBlock Grid.Column="3" Text="{Binding Simulator, StringFormat='Simulator: {0}'}" />
+                  <TextBlock Grid.Column="4" Text="{Binding Hardware, StringFormat='Hardware: {0}'}" Foreground="#FFD166" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="Feature Level does not enable every capability. Hardware status refers only to the unvalidated Wafer adapter layer." Foreground="#93A1B5" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card">
         <Grid RowDefinitions="Auto,*">
           <TextBlock Classes="label" Text="LIVE TRAFFIC · LAST 8 EVENTS" />
-          <ItemsControl Grid.Row="1" ItemsSource="{Binding LiveTraffic}" Margin="0,10,0,0">
+          <ItemsControl Grid.Row="1" ItemsSource="{Binding Logs.LiveTraffic}" Margin="0,10,0,0">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:LogEntryViewModel">
                 <Grid ColumnDefinitions="122,42,155,*" Margin="0,3">

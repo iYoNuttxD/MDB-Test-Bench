@@ -18,6 +18,8 @@ Typed response decoding covers ACK, NAK, JUST RESET, Reader Config Data, Display
 
 The simulator supports initialization, approved and denied vending, cancellation, session completion, timeouts, malformed responses, unexpected responses, raw diagnostics, concurrency, and cancellation. Its output is always labelled SIMULATION.
 
-Release integration tests connect an injected Core `VmcSimulator` through `SimulatedCashlessTransport` to `ScenarioRunner`. These tests establish application behavior without hardware; they do not validate MDB electrical, timing, or adapter-wire conformance.
+Release integration tests connect an injected Core `VmcSimulator` through `SimulatedCashlessTransport` to `ScenarioRunner`. The scenario path invokes an injectable `IMdbCashlessEncoder`; the simulator decodes each command, encodes/decodes its response, advances the state machine, and emits structured MDB traffic logs. These tests establish application behavior without hardware; they do not validate MDB electrical, timing, or adapter-wire conformance.
+
+Physical Structured sending remains disabled until `IWaferProtocolCodec` is validated. Physical raw transmission is available only in Wafer Discovery, where confirmation and byte-exact capture are mandatory. Application/status logs, structured MDB logs and raw adapter evidence are separate records.
 
 This is not full MDB conformance. Level 2 time/date and obsolete user-file operations, most Level 3 transaction variants, FTL, diagnostics semantics, multi-message acknowledgement scheduling, electrical timing, and the mode/9th bit remain outside this version. A capability can be Unsupported, Supported, Experimental, or NotImplemented; Feature Level 3 never enables capabilities implicitly. See [MDB_IMPLEMENTATION_STATUS.md](MDB_IMPLEMENTATION_STATUS.md).

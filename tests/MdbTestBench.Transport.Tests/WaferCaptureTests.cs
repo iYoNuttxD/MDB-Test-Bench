@@ -103,6 +103,26 @@ public sealed class WaferCaptureTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ImportRejectsRawEventWithoutDirectionAndRegressingMonotonicTime()
+    {
+        Directory.CreateDirectory(_directory);
+        var serializer = new WaferCaptureSerializer();
+        var path = Path.Combine(_directory, "invalid-events.mdbcap.json");
+        var first = WaferCaptureEvent.Raw(1, DateTimeOffset.UtcNow, 10, null,
+            WaferCaptureDirection.Rx, new byte[] { 0x00 }, "read", 1, null, null, "Open") with { Direction = null };
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(Header() with { Events = [first] },
+            WaferCaptureSerializerForTests.Options));
+        await Assert.ThrowsAsync<InvalidDataException>(() => serializer.LoadAsync(path));
+
+        var validFirst = first with { Direction = WaferCaptureDirection.Rx };
+        var second = WaferCaptureEvent.Raw(2, DateTimeOffset.UtcNow, 9, null,
+            WaferCaptureDirection.Rx, new byte[] { 0x01 }, "read", 2, null, null, "Open");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(Header() with { Events = [validFirst, second] },
+            WaferCaptureSerializerForTests.Options));
+        await Assert.ThrowsAsync<InvalidDataException>(() => serializer.LoadAsync(path));
+    }
+
+    [Fact]
     public void AnalysisIsConservativeAndInterpretationNeverClaimsConfirmed()
     {
         var timing = Header().Capture;
@@ -157,6 +177,97 @@ public sealed class WaferCaptureTests : IAsyncLifetime
         Assert.Equal(System.Text.Encoding.ASCII.GetBytes("10AF\r\n"), tx.GetRawBytes());
     }
 
+    [Fact]
+    public async Task ConcurrentStopIsIdempotentAndClosesTransportOnce()
+    {
+        var transport = new CountingRawTransport();
+        var recorder = await WaferCaptureRecorder.StartAsync(Header(), _directory);
+        await using var controller = new WaferDiscoveryCaptureController(transport, recorder);
+        await controller.StartAsync();
+
+        var artifacts = await Task.WhenAll(controller.StopAsync(), controller.StopAsync(), controller.StopAsync());
+
+        Assert.All(artifacts, artifact => Assert.Equal(artifacts[0], artifact));
+        Assert.Equal(1, transport.DisconnectCount);
+        var path = Path.Combine(_directory, "concurrent-stop.mdbcap.json");
+        var serializer = new WaferCaptureSerializer();
+        await serializer.ExportAsync(artifacts[0], path);
+        var imported = await serializer.LoadAsync(path);
+        Assert.Single(imported.Events, item => item.TransportState == "SerialClosed");
+    }
+
+    [Fact]
+    public async Task StopWaitsForInFlightWriteAndDoesNotLoseTxEvent()
+    {
+        var transport = new CountingRawTransport { WriteDelay = TimeSpan.FromMilliseconds(30) };
+        var recorder = await WaferCaptureRecorder.StartAsync(Header(), _directory);
+        await using var controller = new WaferDiscoveryCaptureController(transport, recorder);
+        await controller.StartAsync();
+        var send = controller.SendAsync(new byte[] { 0x10 }, new SerialWireFormatOptions(), "ConcurrentTx");
+        await Task.Delay(5);
+        var stop = controller.StopAsync();
+        await Task.WhenAll(send, stop);
+        var path = Path.Combine(_directory, "stop-write.mdbcap.json");
+        var serializer = new WaferCaptureSerializer();
+        await serializer.ExportAsync(await stop, path);
+        var imported = await serializer.LoadAsync(path);
+        Assert.Contains(imported.Events, item => item.Direction == WaferCaptureDirection.Tx && item.Hex == "10");
+    }
+
+    [Fact]
+    public async Task ApplicationCloseDisposesActiveCaptureExactlyOnce()
+    {
+        var transport = new CountingRawTransport();
+        var recorder = await WaferCaptureRecorder.StartAsync(Header(), _directory);
+        var recorded = new List<WaferCaptureEvent>();
+        var controller = new WaferDiscoveryCaptureController(transport, recorder);
+        controller.EventRecorded += (_, item) => recorded.Add(item);
+        await controller.StartAsync();
+
+        await controller.DisposeAsync();
+
+        Assert.Equal(1, transport.DisconnectCount);
+        Assert.Equal(1, transport.DisposeCount);
+        Assert.Single(recorded, item => item.TransportState == "SerialClosed");
+    }
+
+    [Fact]
+    public async Task FailingUiSubscriberCannotStopOrLoseRawEvidence()
+    {
+        var recorder = await WaferCaptureRecorder.StartAsync(Header(), _directory);
+        await using (recorder)
+        {
+            recorder.EventRecorded += (_, _) => throw new InvalidOperationException("simulated UI failure");
+            var tick = Stopwatch.GetTimestamp();
+            await recorder.RecordRawAsync(WaferCaptureDirection.Rx, new byte[] { 0x03, 0xFF, 0xFE }, "read", tick, tick + 1, "Open");
+            var artifact = await recorder.StopAsync();
+            var path = Path.Combine(_directory, "subscriber-failure.mdbcap.json");
+            var serializer = new WaferCaptureSerializer();
+            await serializer.ExportAsync(artifact, path);
+            var imported = await serializer.LoadAsync(path);
+            Assert.Equal(new byte[] { 0x03, 0xFF, 0xFE }, Assert.Single(imported.Events).GetRawBytes());
+        }
+    }
+
+    [Fact]
+    public async Task LongCaptureStreamsToSpoolWithoutRetainingEventCollection()
+    {
+        var recorder = await WaferCaptureRecorder.StartAsync(Header(), _directory, 32 * 1024 * 1024);
+        await using (recorder)
+        {
+            var payload = Enumerable.Range(0, 256).Select(value => (byte)value).ToArray();
+            var tick = Stopwatch.GetTimestamp();
+            for (var index = 0; index < 10_000; index++)
+                await recorder.RecordRawAsync(WaferCaptureDirection.Rx, payload, "long-read", tick + index, tick + index + 1, "Open");
+            var artifact = await recorder.StopAsync();
+            Assert.True(artifact.CaptureSizeBytes > 5 * 1024 * 1024);
+            Assert.DoesNotContain(typeof(WaferCaptureRecorder).GetFields(System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic), field =>
+                    typeof(IEnumerable<WaferCaptureEvent>).IsAssignableFrom(field.FieldType));
+            Assert.Equal(10_000, artifact.Header.Statistics.RxEvents);
+        }
+    }
+
     private static WaferCaptureDocument Header()
     {
         var now = DateTimeOffset.UtcNow;
@@ -181,5 +292,26 @@ public sealed class WaferCaptureTests : IAsyncLifetime
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
         };
+    }
+
+    private sealed class CountingRawTransport : IRawByteTransport
+    {
+        private readonly TaskCompletionSource _read = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool IsConnected { get; private set; }
+        public int DisconnectCount { get; private set; }
+        public int DisposeCount { get; private set; }
+        public TimeSpan WriteDelay { get; init; }
+        public Task ConnectAsync(CancellationToken cancellationToken = default) { IsConnected = true; return Task.CompletedTask; }
+        public Task DisconnectAsync(CancellationToken cancellationToken = default)
+        {
+            DisconnectCount++; IsConnected = false; return Task.CompletedTask;
+        }
+        public async Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default) =>
+            await Task.Delay(WriteDelay, cancellationToken);
+        public async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await _read.Task.WaitAsync(cancellationToken); return 0;
+        }
+        public ValueTask DisposeAsync() { DisposeCount++; IsConnected = false; return ValueTask.CompletedTask; }
     }
 }

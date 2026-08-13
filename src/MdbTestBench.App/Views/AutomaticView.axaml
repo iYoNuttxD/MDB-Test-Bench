@@ -5,7 +5,7 @@
     <Border Classes="card">
       <Grid RowDefinitions="Auto,*">
         <TextBlock Classes="label" Text="BUILT-IN SIMULATOR SCENARIOS" />
-        <ListBox Grid.Row="1" Margin="0,10,0,0" ItemsSource="{Binding Scenarios}" SelectedItem="{Binding SelectedScenario}">
+        <ListBox Grid.Row="1" Margin="0,10,0,0" ItemsSource="{Binding Automatic.Scenarios}" SelectedItem="{Binding Automatic.Selected}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:ScenarioDisplayViewModel">
               <StackPanel Margin="4,7" Spacing="2">
@@ -22,13 +22,13 @@
       <StackPanel Spacing="14">
         <Border Classes="card">
           <StackPanel Spacing="8">
-            <TextBlock Classes="value" Text="{Binding SelectedScenario.Name}" />
-            <TextBlock Text="{Binding SelectedScenario.Description}" TextWrapping="Wrap" Foreground="#93A1B5" />
+            <TextBlock Classes="value" Text="{Binding Automatic.Selected.Name}" />
+            <TextBlock Text="{Binding Automatic.Selected.Description}" TextWrapping="Wrap" Foreground="#93A1B5" />
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <Button Classes="primary" Content="Run scenario" Command="{Binding RunScenarioCommand}" />
-              <Button Content="Cancel" Command="{Binding CancelScenarioCommand}" IsEnabled="{Binding IsScenarioRunning}" />
-              <TextBlock Text="{Binding SelectedScenario.Result}" VerticalAlignment="Center" FontWeight="Bold" />
-              <TextBlock Text="{Binding SelectedScenario.Duration}" VerticalAlignment="Center" Foreground="#93A1B5" />
+              <Button Classes="primary" Content="Run scenario" Command="{Binding Automatic.RunCommand}" />
+              <Button Content="Cancel" Command="{Binding Automatic.CancelCommand}" IsEnabled="{Binding Automatic.IsRunning}" />
+              <TextBlock Text="{Binding Automatic.Selected.Result}" VerticalAlignment="Center" FontWeight="Bold" />
+              <TextBlock Text="{Binding Automatic.Selected.Duration}" VerticalAlignment="Center" Foreground="#93A1B5" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -40,7 +40,7 @@
               <TextBlock Grid.Column="2" Classes="label" Text="RESULT" />
               <TextBlock Grid.Column="3" Classes="label" Text="RECEIVED" />
             </Grid>
-            <ItemsControl Grid.Row="1" ItemsSource="{Binding SelectedScenario.Steps}">
+            <ItemsControl Grid.Row="1" ItemsSource="{Binding Automatic.Selected.Steps}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ScenarioStepDisplayViewModel">
                   <Grid ColumnDefinitions="45,*,100,150" Margin="0,5">
@@ -56,10 +56,10 @@
         </Border>
         <Border Classes="card">
           <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="22">
-            <TextBlock Text="{Binding ScenarioTotal, StringFormat='Total  {0}'}" />
-            <TextBlock Grid.Column="1" Text="{Binding ScenarioPasses, StringFormat='Passes  {0}'}" Foreground="#41C97A" />
-            <TextBlock Grid.Column="2" Text="{Binding ScenarioFailures, StringFormat='Failures  {0}'}" Foreground="#F08A91" />
-            <TextBlock Grid.Column="3" Text="{Binding ScenarioSummary}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Automatic.Selected.Steps.Count, StringFormat='Total  {0}'}" />
+            <TextBlock Grid.Column="1" Text="{Binding Automatic.Passes, StringFormat='Passes  {0}'}" Foreground="#41C97A" />
+            <TextBlock Grid.Column="2" Text="{Binding Automatic.Failures, StringFormat='Failures  {0}'}" Foreground="#F08A91" />
+            <TextBlock Grid.Column="3" Text="{Binding Automatic.Summary}" TextWrapping="Wrap" />
           </Grid>
         </Border>
       </StackPanel>

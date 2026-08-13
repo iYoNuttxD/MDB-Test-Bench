@@ -117,3 +117,10 @@ public sealed class ScenarioStepDisplayViewModel(int number, TestStep step) : Vi
     public string Status { get => _status; set => SetProperty(ref _status, value); }
     public string Received { get => _received; set => SetProperty(ref _received, value); }
 }
+
+public sealed record ProtocolSupportViewModel(
+    string FeatureLevel,
+    string Encoder,
+    string Decoder,
+    string Simulator,
+    string Hardware);

@@ -12,9 +12,10 @@
             <Button Grid.Column="3" Content="Stop" Command="{Binding Discovery.StopCommand}" VerticalAlignment="Bottom"/>
           </Grid>
           <TextBox PlaceholderText="Operator notes (unknown values may remain blank)" Text="{Binding Discovery.Notes}"/>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <TextBlock Text="{Binding Discovery.Status}" TextWrapping="Wrap" Foreground="#FFD166" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1" Text="{Binding Discovery.CaptureSize, StringFormat='Capture size: {0}'}" VerticalAlignment="Center"/>
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <Border Background="#493B13" CornerRadius="5" Padding="8,4"><TextBlock Text="{Binding Discovery.OperationMode}" Foreground="#FFD166" FontWeight="Bold"/></Border>
+            <TextBlock Grid.Column="1" Text="{Binding Discovery.Status}" TextWrapping="Wrap" Foreground="#FFD166" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Text="{Binding Discovery.CaptureSize, StringFormat='Capture size: {0}'}" VerticalAlignment="Center"/>
           </Grid>
         </StackPanel>
       </Border>
@@ -61,7 +62,7 @@
               <TextBlock Text="RAW ADAPTER / WAFER DEBUG" Foreground="#FFD166" FontWeight="Bold"/>
               <TextBlock Text="Not Raw MDB. Wire format and terminator come from Settings." Opacity="0.7" TextWrapping="Wrap"/>
               <TextBox Text="{Binding Discovery.RawHex}" PlaceholderText="10 or 31 30" FontFamily="Cascadia Mono, Menlo, Consolas, monospace"/>
-              <TextBlock Text="{Binding Discovery.RawValidation}" FontSize="11"/>
+              <TextBlock Text="{Binding Discovery.RawValidation}" FontSize="11" Foreground="#FFD166" TextWrapping="Wrap"/>
               <CheckBox Content="I reviewed and confirm these exact adapter bytes" IsChecked="{Binding Discovery.RawConfirmed}"/>
               <Button Content="Send Raw Adapter" Command="{Binding Discovery.SendRawCommand}"/>
             </StackPanel>

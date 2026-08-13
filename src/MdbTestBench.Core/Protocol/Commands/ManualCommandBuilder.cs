@@ -44,9 +44,7 @@ public sealed record ManualCommandBuildResult(
 
 public static class ManualCommandBuilder
 {
-    private static readonly MdbCashlessEncoder Encoder = new();
-
-    public static ManualCommandBuildResult Build(ManualCommandInput input)
+    public static ManualCommandBuildResult Build(ManualCommandInput input, IMdbCashlessEncoder? encoder = null)
     {
         ArgumentNullException.ThrowIfNull(input);
         if (input.Kind is ManualCommandKind.VendRequest or ManualCommandKind.CashSale && input.Price is null)
@@ -134,7 +132,7 @@ public static class ManualCommandBuilder
         }
         var logicalPayload = payloadParts.Count == 0 ? "No logical fields" : string.Join(" · ", payloadParts);
 
-        var bytes = Encoder.Encode(semanticCommand);
+        var bytes = (encoder ?? new MdbCashlessEncoder()).Encode(semanticCommand);
         var destination = input.Device == MdbCashlessDevice.CashlessDevice1
             ? new MdbAddress(0x10, MdbDeviceType.CashlessDevice1)
             : new MdbAddress(0x60, MdbDeviceType.CashlessDevice2);

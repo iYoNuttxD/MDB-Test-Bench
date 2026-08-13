@@ -4,14 +4,14 @@
   <Grid Margin="28" RowDefinitions="Auto,*,Auto" RowSpacing="12">
     <Border Classes="card">
       <WrapPanel VerticalAlignment="Center">
-        <CheckBox Content="TX" IsChecked="{Binding ShowTx}" Margin="0,0,14,0" />
-        <CheckBox Content="RX" IsChecked="{Binding ShowRx}" Margin="0,0,14,0" />
-        <CheckBox Content="Errors" IsChecked="{Binding ShowErrors}" Margin="0,0,14,0" />
-        <ToggleSwitch Content="Pause view" IsChecked="{Binding LogsPaused}" Margin="0,0,14,0" />
-        <CheckBox Content="Auto-scroll" IsChecked="{Binding AutoScroll}" Margin="0,0,14,0" />
-        <TextBox Text="{Binding LogSearch}" PlaceholderText="Search logs" Width="220" Margin="0,0,10,0" />
-        <Button Content="Clear" Command="{Binding ClearLogsCommand}" Margin="0,0,8,0" />
-        <Button Content="Export TXT + JSON" Command="{Binding ExportLogsCommand}" />
+        <CheckBox Content="TX" IsChecked="{Binding Logs.ShowTx}" Margin="0,0,14,0" />
+        <CheckBox Content="RX" IsChecked="{Binding Logs.ShowRx}" Margin="0,0,14,0" />
+        <CheckBox Content="Errors" IsChecked="{Binding Logs.ShowErrors}" Margin="0,0,14,0" />
+        <ToggleSwitch Content="Pause view" IsChecked="{Binding Logs.Paused}" Margin="0,0,14,0" />
+        <CheckBox Content="Auto-scroll" IsChecked="{Binding Logs.AutoScroll}" Margin="0,0,14,0" />
+        <TextBox Text="{Binding Logs.Search}" PlaceholderText="Search application/MDB logs" Width="220" Margin="0,0,10,0" />
+        <Button Content="Clear" Command="{Binding Logs.ClearCommand}" Margin="0,0,8,0" />
+        <Button Content="Export application/MDB logs" Command="{Binding Logs.ExportCommand}" />
       </WrapPanel>
     </Border>
     <Border Grid.Row="1" Classes="card" Padding="10">
@@ -21,7 +21,7 @@
           <TextBlock Grid.Column="2" Classes="label" Text="COMMAND" /><TextBlock Grid.Column="3" Classes="label" Text="DESCRIPTION" />
           <TextBlock Grid.Column="4" Classes="label" Text="RAW" /><TextBlock Grid.Column="5" Classes="label" Text="STATUS" />
         </Grid>
-        <ListBox x:Name="LogsList" Grid.Row="1" ItemsSource="{Binding VisibleLogs}" SelectedItem="{Binding SelectedLog}">
+        <ListBox x:Name="LogsList" Grid.Row="1" ItemsSource="{Binding Logs.Visible}" SelectedItem="{Binding Logs.Selected}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:LogEntryViewModel">
               <Grid ColumnDefinitions="108,40,170,*,150,80" Margin="5,5">
@@ -38,9 +38,9 @@
       </Grid>
     </Border>
     <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
-      <Button Content="Copy line" Command="{Binding CopyLogLineCommand}" />
-      <Button Grid.Column="1" Content="Copy raw HEX" Command="{Binding CopyRawHexCommand}" />
-      <TextBlock Grid.Column="2" Text="{Binding LogMessage}" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#93A1B5" />
+      <Button Content="Copy line" Command="{Binding Logs.CopyLineCommand}" />
+      <Button Grid.Column="1" Content="Copy MDB/log raw HEX" Command="{Binding Logs.CopyRawHexCommand}" />
+      <TextBlock Grid.Column="2" Text="{Binding Logs.Message}" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#93A1B5" />
     </Grid>
   </Grid>
 </UserControl>

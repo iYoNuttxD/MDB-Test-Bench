@@ -39,8 +39,21 @@ tests/
 `MdbTestBench.Core` depends on neither Avalonia nor `System.IO.Ports`. `IMdbCashlessEncoder` converts semantic operations into standard MDB blocks; `IMdbCashlessDecoder` produces typed responses while preserving unknown bytes. `IMdbTransport` separates logical exchange from its origin, and structured hardware communication still requires an evidence-based `IWaferProtocolCodec`.
 
 ```text
-Semantic command -> MDB Cashless encoder -> MDB bytes -> IWaferProtocolCodec -> adapter
-Adapter -> IWaferProtocolCodec -> MDB bytes -> MDB Cashless decoder -> typed response
+                         UI
+                          |
+             +------------+------------+
+             |                         |
+        Structured                  Discovery
+             |                         |
+       MDB commands                RAW capture
+             |                         |
+    MdbCashlessEncoder               Serial
+             |                         |
+       MDB byte blocks                Wafer
+             |
+    IWaferProtocolCodec (pending validation)
+             |
+      Wafer transport -> Serial
 ```
 
 The Core representation includes the standard MDB checksum but not the physical mode/9th bit. Whether revision `2022061K5` expects the checksum in its host payload is still a Wafer codec decision that must be established from hardware evidence.
@@ -69,7 +82,7 @@ All automated tests are hardware-free:
 dotnet test MDBTestBench.sln --configuration Release --no-build
 ```
 
-The suite covers MDB command addresses, encoder/decoder vectors, round trips, feature levels, values/checksum, Core, state machine, profiles, JSON, manual commands, HEX limits, bounded logs, serial configuration and wire formats, simulator lifecycle and behaviors, timeouts, cancellation, scenario validation, and end-to-end `VmcSimulator + TestEngine + SimulatedCashlessTransport` flows.
+The suite covers MDB command addresses, encoder/decoder vectors, round trips, feature levels, values/checksum, Core, state machine, profiles, JSON, manual commands, HEX limits, bounded logs, serial configuration and wire formats, simulator lifecycle and behaviors, timeouts, cancellation, scenario validation, long streaming captures, concurrent stop/write behavior, byte-exact capture restart round trips, and end-to-end `VmcSimulator + TestEngine + SimulatedCashlessTransport` flows. The synthetic golden capture is `tests/fixtures/simulated-approved-vend.mdbcap.json`; it contains no hardware evidence.
 
 ## Run
 
@@ -84,6 +97,7 @@ The packaged executable supports a non-GUI distribution smoke test:
 ```bash
 ./MDB-Test-Bench --smoke-test
 ./MDB-Test-Bench --discovery-smoke-test
+./MDB-Test-Bench --discovery-smoke-test --capture-output=/absolute/path/sample-simulator.mdbcap.json
 ```
 
 ## Supported Platforms
@@ -99,7 +113,7 @@ The user does not need to install .NET. macOS bundles are unsigned until an Appl
 
 ## Hardware
 
-The reported adapter is Wafer MDB-RS232 revision `2022061K5`. Its host framing and polling behavior remain unconfirmed. Structured hardware commands remain disabled; only operator-confirmed Adapter Debug bytes can be sent. Wafer Discovery preserves raw read chunks before interpretation and exports them for offline analysis. Follow [the hardware checklist](docs/TESTING_WITH_HARDWARE.md) and preserve exact captures before implementing a codec.
+The reported adapter is Wafer MDB-RS232 revision `2022061K5`. Its host framing and polling behavior remain unconfirmed. Structured hardware commands remain disabled. Physical Raw Adapter TX exists only inside Wafer Discovery, requires operator confirmation, and is written to the active capture after wire formatting. Wafer Discovery preserves raw read chunks before interpretation and exports them for offline analysis. Follow [the hardware checklist](docs/TESTING_WITH_HARDWARE.md) and preserve exact captures before implementing a codec.
 
 ## Downloads / Releases
 
@@ -118,4 +132,4 @@ No tag or GitHub Release is created automatically during development. Local pack
 
 Settings, custom profiles, captures, temporary capture spools, exports, and logs are stored below the operating system's per-user local application-data directory in `MdbTestBench/`. Captures default to a configurable 100 MB maximum. Invalid or oversized JSON is rejected without closing the application. A saved serial name is selected only when currently discovered.
 
-Further reading: [architecture](docs/ARCHITECTURE.md), [capture format](docs/CAPTURE_FORMAT.md), [Discovery mode](docs/WAFER_DISCOVERY.md), [MDB reference](docs/MDB_REFERENCE.md), [implementation status](docs/MDB_IMPLEMENTATION_STATUS.md), [hardware](docs/HARDWARE.md), [MDB scope](docs/MDB_SCOPE.md), and [Wafer integration](docs/WAFER_INTEGRATION.md).
+Further reading: [v0.1.1 status](docs/V0.1.1_STATUS.md), [architecture](docs/ARCHITECTURE.md), [capture format](docs/CAPTURE_FORMAT.md), [Discovery mode](docs/WAFER_DISCOVERY.md), [MDB reference](docs/MDB_REFERENCE.md), [implementation status](docs/MDB_IMPLEMENTATION_STATUS.md), [hardware](docs/HARDWARE.md), [MDB scope](docs/MDB_SCOPE.md), and [Wafer integration](docs/WAFER_INTEGRATION.md).

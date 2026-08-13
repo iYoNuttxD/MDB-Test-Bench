@@ -14,7 +14,7 @@ Material about some newer adapters indicates that polling may be performed inter
 
 The Core now produces standard MDB cashless blocks (`address/command + data + MDB checksum`) and decodes standard reader response blocks. This does not answer whether revision `2022061K5` expects the host to include or omit that checksum, how it represents the MDB mode/9th bit, or what envelope it uses. Those transformations belong exclusively in `IWaferProtocolCodec`.
 
-Structured hardware commands are intentionally disabled in the UI until the codec is validated. Advanced / Adapter Debug can send user-confirmed data as `BinaryBytes` or `AsciiHex`, with None/CR/LF/CRLF terminators. Those settings are experimental probes, not protocol claims.
+Structured hardware commands are intentionally disabled in the UI until the codec is validated. Advanced / Adapter Debug physical transmission exists only in Wafer Discovery, where the operator sees port, input bytes, `BinaryBytes`/`AsciiHex`, None/CR/LF/CRLF terminator and a warning, confirms the transmission, and captures the exact formatted TX. The normal workbench session cannot perform a raw hardware write. These settings are experimental probes, not protocol claims.
 
 Wafer Discovery is the evidence path used before a codec exists. It captures actual serial read chunks before interpretation, exact formatted TX bytes, monotonic event deltas, markers, lifecycle/errors, optional operator-saved probes, and a recalculable possible-MDB overlay. It exports the versioned privacy-safe format documented in [CAPTURE_FORMAT.md](CAPTURE_FORMAT.md). Repeated prefixes/suffixes, delimiters, traffic appearance and periodic RX are statistical observations only. They do not establish framing or POLL ownership.
 

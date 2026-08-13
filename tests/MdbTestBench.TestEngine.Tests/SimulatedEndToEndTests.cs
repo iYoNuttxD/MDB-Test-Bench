@@ -1,5 +1,6 @@
 using MdbTestBench.Core.Logging;
 using MdbTestBench.Core.Protocol;
+using MdbTestBench.Core.Protocol.Cashless;
 using MdbTestBench.Core.Vmc;
 using MdbTestBench.TestEngine.Models;
 using MdbTestBench.Transport.Simulation;
@@ -76,6 +77,31 @@ public sealed class SimulatedEndToEndTests
         Assert.Equal(VmcState.Connected, vmc.State);
     }
 
+    [Fact]
+    public async Task ApprovedVendUsesRealEncoderAndDecoderInThePrimaryScenarioPath()
+    {
+        var encoder = new CountingEncoder();
+        var decoder = new CountingDecoder();
+        var scenario = ScenarioCatalog.CreateBuiltIn().Single(item => item.Id == "l1-approved-vend");
+        var vmc = new VmcSimulator(new VmcStateMachine());
+        var logs = new InMemoryMdbLogSink();
+        await using var transport = new SimulatedCashlessTransport(new SimulatedCashlessOptions
+        {
+            Behavior = SimulatorBehavior.AlwaysApprove,
+            ResponseDelay = TimeSpan.Zero
+        }, vmcSimulator: vmc, decoder: decoder);
+
+        var result = await new ScenarioRunner(transport, logs, encoder).RunAsync(scenario);
+
+        Assert.Equal(TestRunStatus.Passed, result.Status);
+        Assert.Equal(result.Steps.Count, encoder.EncodeCount);
+        Assert.Equal(result.Steps.Count, decoder.CommandCount);
+        Assert.Equal(result.Steps.Count, decoder.ResponseCount);
+        Assert.Equal(VmcState.Enabled, vmc.State);
+        Assert.Contains(logs.Snapshot(), entry => entry.Direction == MdbDirection.Tx && !entry.RawData.IsEmpty);
+        Assert.Contains(logs.Snapshot(), entry => entry.Direction == MdbDirection.Rx && !entry.RawData.IsEmpty);
+    }
+
     private static async Task<(TestRunResult Result, VmcState State, InMemoryMdbLogSink Logs)> RunAsync(
         TestScenario scenario,
         SimulatorBehavior behavior,
@@ -110,4 +136,32 @@ public sealed class SimulatedEndToEndTests
             }
         ]
     };
+
+    private sealed class CountingEncoder : IMdbCashlessEncoder
+    {
+        private readonly MdbCashlessEncoder _inner = new();
+        public int EncodeCount { get; private set; }
+        public ReadOnlyMemory<byte> Encode(MdbCashlessCommand command)
+        {
+            EncodeCount++;
+            return _inner.Encode(command);
+        }
+    }
+
+    private sealed class CountingDecoder : IMdbCashlessDecoder
+    {
+        private readonly MdbCashlessDecoder _inner = new();
+        public int CommandCount { get; private set; }
+        public int ResponseCount { get; private set; }
+        public MdbDecodedCommand DecodeCommand(ReadOnlySpan<byte> block)
+        {
+            CommandCount++;
+            return _inner.DecodeCommand(block);
+        }
+        public MdbCashlessResponse DecodeResponse(ReadOnlySpan<byte> block, MdbCashlessDecodeOptions? options = null)
+        {
+            ResponseCount++;
+            return _inner.DecodeResponse(block, options);
+        }
+    }
 }

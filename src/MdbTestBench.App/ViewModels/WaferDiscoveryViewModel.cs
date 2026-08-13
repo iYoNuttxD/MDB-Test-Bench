@@ -44,6 +44,7 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     private bool _isCapturing;
     private long _captureSizeBytes;
     private string _analysis = "No capture loaded.";
+    private string _operationMode = "READY — transport selected in Settings";
 
     public WaferDiscoveryViewModel(AppPaths paths, Func<AppSettings> settings, Func<bool> workbenchConnected)
     {
@@ -79,7 +80,16 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     public string MarkerText { get => _markerText; set => SetProperty(ref _markerText, value); }
     public string RawHex { get => _rawHex; set { if (SetProperty(ref _rawHex, value)) { RawConfirmed = false; RaisePropertyChanged(nameof(RawValidation)); } } }
     public bool RawConfirmed { get => _rawConfirmed; set => SetProperty(ref _rawConfirmed, value); }
-    public string RawValidation { get { var parsed = HexParser.Parse(RawHex); return parsed.IsValid ? $"Valid · {parsed.Bytes.Length} byte(s)" : parsed.Error ?? "Invalid"; } }
+    public string RawValidation
+    {
+        get
+        {
+            var parsed = HexParser.Parse(RawHex);
+            return parsed.IsValid
+                ? $"Valid · {parsed.Bytes.Length} logical byte(s) · {RawAdapterConfiguration}"
+                : parsed.Error ?? "Invalid";
+        }
+    }
     public string ProbeName { get => _probeName; set => SetProperty(ref _probeName, value); }
     public string ProbeNotes { get => _probeNotes; set => SetProperty(ref _probeNotes, value); }
     public WaferProbe? SelectedProbe { get => _selectedProbe; set => SetProperty(ref _selectedProbe, value); }
@@ -91,6 +101,17 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     public bool IsCapturing { get => _isCapturing; private set => SetProperty(ref _isCapturing, value); }
     public string CaptureSize => $"{_captureSizeBytes / 1024d / 1024d:0.00} MB";
     public string Analysis { get => _analysis; private set => SetProperty(ref _analysis, value); }
+    public string OperationMode { get => _operationMode; private set => SetProperty(ref _operationMode, value); }
+    public string RawAdapterConfiguration
+    {
+        get
+        {
+            var settings = _settings();
+            var port = settings.SelectedTransport == TransportKind.Simulated ? "Virtual / Simulator" :
+                string.IsNullOrWhiteSpace(settings.SerialPort) ? "No port selected" : settings.SerialPort;
+            return $"Port: {port} · Wire format: {settings.WireFormat} · Terminator: {settings.AsciiHexTerminator}";
+        }
+    }
 
     private async Task StartAsync()
     {
@@ -138,6 +159,8 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
             Events.Clear(); _document = null; _artifact = null; _captureSizeBytes = 0;
             await _controller.StartAsync();
             IsCapturing = true;
+            OperationMode = settings.SelectedTransport == TransportKind.Simulated ? "SIMULATOR CAPTURE" : "HARDWARE / WAFER CAPTURE";
+            RaisePropertyChanged(nameof(RawAdapterConfiguration));
             Status = settings.SelectedTransport == TransportKind.Simulated
                 ? "● Capturing — SIMULATION (no hardware)" : "● Capturing raw serial chunks";
         }
@@ -210,10 +233,12 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
         try
         {
             if (IsCapturing) await StopAsync();
-            if (_artifact is null) throw new InvalidOperationException("Stop a new capture before exporting it.");
-            var file = WaferCaptureSerializer.CreateSafeFileName(_artifact.Header.Adapter.PrintedRevision, _artifact.Header.Capture.StartedAtUtc);
+            var header = _artifact?.Header ?? _document
+                ?? throw new InvalidOperationException("Stop or open a capture before exporting it.");
+            var file = WaferCaptureSerializer.CreateSafeFileName(header.Adapter.PrintedRevision, header.Capture.StartedAtUtc);
             CapturePath = Path.Combine(_paths.Captures, file);
-            await _serializer.ExportAsync(_artifact, CapturePath);
+            if (_artifact is not null) await _serializer.ExportAsync(_artifact, CapturePath);
+            else await _serializer.ExportDocumentAsync(header, CapturePath);
             Status = $"Exported privacy-safe raw evidence. Review before sharing: {CapturePath}";
         }
         catch (Exception exception) { Status = Friendly(exception); }
@@ -241,8 +266,15 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
             var events = loaded.Events.Select(item => item.IsRaw && item.Direction is { } direction
                 ? item with { PossibleMdbInterpretation = interpreter.Interpret(direction, item.GetRawBytes()) } : item).ToArray();
             var timing = loaded.Capture;
+            await DisposeControllerAsync();
+            DeleteArtifactSpool();
             _document = loaded with { Events = events, Statistics = new WaferCaptureAnalyzer().Analyze(events, timing) };
+            Probes.Clear();
+            foreach (var probe in _document.Probes) Probes.Add(probe);
+            _captureSizeBytes = new FileInfo(CapturePath).Length;
             ApplyDocument(); SetAnalysis(_document.Statistics);
+            RaisePropertyChanged(nameof(CaptureSize));
+            OperationMode = "OFFLINE CAPTURE ANALYSIS — hardware disconnected";
             Status = $"Capture opened offline: {_document.CaptureId}. No bytes were retransmitted.";
         }
         catch (Exception exception) { Status = Friendly(exception); }

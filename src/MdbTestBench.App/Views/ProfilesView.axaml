@@ -5,7 +5,7 @@
     <Border Classes="card">
       <Grid RowDefinitions="Auto,*,Auto">
         <TextBlock Classes="label" Text="PROFILES" />
-        <ListBox Grid.Row="1" Margin="0,10" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}">
+        <ListBox Grid.Row="1" Margin="0,10" ItemsSource="{Binding Profiles.Items}" SelectedItem="{Binding Profiles.Selected}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="profiles:MdbProfile">
               <StackPanel Margin="4,7">
@@ -16,9 +16,9 @@
           </ListBox.ItemTemplate>
         </ListBox>
         <WrapPanel Grid.Row="2">
-          <Button Content="New" Command="{Binding NewProfileCommand}" Margin="0,0,6,6" />
-          <Button Content="Duplicate" Command="{Binding DuplicateProfileCommand}" Margin="0,0,6,6" />
-          <Button Classes="danger" Content="Delete custom" Command="{Binding DeleteProfileCommand}" Margin="0,0,6,6" />
+          <Button Content="New" Command="{Binding Profiles.NewCommand}" Margin="0,0,6,6" />
+          <Button Content="Duplicate" Command="{Binding Profiles.DuplicateCommand}" Margin="0,0,6,6" />
+          <Button Classes="danger" Content="Delete custom" Command="{Binding Profiles.DeleteCommand}" Margin="0,0,6,6" />
         </WrapPanel>
       </Grid>
     </Border>
@@ -28,16 +28,16 @@
           <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto">
             <StackPanel>
               <TextBlock Classes="label" Text="NAME" />
-              <TextBox Text="{Binding ProfileEditor.Name}" IsReadOnly="{Binding ProfileEditor.IsBuiltIn}" />
+              <TextBox Text="{Binding Profiles.Editor.Name}" IsReadOnly="{Binding Profiles.Editor.IsBuiltIn}" />
             </StackPanel>
             <StackPanel Grid.Column="1">
               <TextBlock Classes="label" Text="BASE FEATURE LEVEL" />
-              <ComboBox ItemsSource="{Binding FeatureLevelOptions}" SelectedItem="{Binding ProfileEditor.BaseLevel}"
-                        IsEnabled="{Binding ProfileEditor.CanEdit}" />
+              <ComboBox ItemsSource="{Binding Profiles.FeatureLevels}" SelectedItem="{Binding Profiles.Editor.BaseLevel}"
+                        IsEnabled="{Binding Profiles.Editor.CanEdit}" />
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
               <TextBlock Classes="label" Text="DESCRIPTION" />
-              <TextBox Text="{Binding ProfileEditor.Description}" IsReadOnly="{Binding ProfileEditor.IsBuiltIn}"
+              <TextBox Text="{Binding Profiles.Editor.Description}" IsReadOnly="{Binding Profiles.Editor.IsBuiltIn}"
                        AcceptsReturn="True" MinHeight="65" />
             </StackPanel>
             <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Margin="0,10,0,0" Text="Capability status describes the profile; it does not imply implementation."
@@ -48,27 +48,27 @@
           <StackPanel Spacing="8">
             <TextBlock Classes="label" Text="CAPABILITIES" />
             <Grid ColumnDefinitions="*,180,*,180" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
-              <TextBlock Text="Expansion" VerticalAlignment="Center" /><ComboBox Grid.Column="1" ItemsSource="{Binding CapabilityStatusOptions}" SelectedItem="{Binding ProfileEditor.Expansion}" IsEnabled="{Binding ProfileEditor.CanEdit}" />
-              <TextBlock Grid.Column="2" Text="Revalue" VerticalAlignment="Center" /><ComboBox Grid.Column="3" ItemsSource="{Binding CapabilityStatusOptions}" SelectedItem="{Binding ProfileEditor.Revalue}" IsEnabled="{Binding ProfileEditor.CanEdit}" />
-              <TextBlock Grid.Row="1" Text="Remote vend" VerticalAlignment="Center" /><ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CapabilityStatusOptions}" SelectedItem="{Binding ProfileEditor.RemoteVend}" IsEnabled="{Binding ProfileEditor.CanEdit}" />
-              <TextBlock Grid.Row="1" Grid.Column="2" Text="Multi-currency" VerticalAlignment="Center" /><ComboBox Grid.Row="1" Grid.Column="3" ItemsSource="{Binding CapabilityStatusOptions}" SelectedItem="{Binding ProfileEditor.MultiCurrency}" IsEnabled="{Binding ProfileEditor.CanEdit}" />
-              <TextBlock Grid.Row="2" Text="Negative vend" VerticalAlignment="Center" /><ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding CapabilityStatusOptions}" SelectedItem="{Binding ProfileEditor.NegativeVend}" IsEnabled="{Binding ProfileEditor.CanEdit}" />
-              <TextBlock Grid.Row="2" Grid.Column="2" Text="Data entry" VerticalAlignment="Center" /><ComboBox Grid.Row="2" Grid.Column="3" ItemsSource="{Binding CapabilityStatusOptions}" SelectedItem="{Binding ProfileEditor.DataEntry}" IsEnabled="{Binding ProfileEditor.CanEdit}" />
-              <TextBlock Grid.Row="3" Text="Basket" VerticalAlignment="Center" /><ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding CapabilityStatusOptions}" SelectedItem="{Binding ProfileEditor.Basket}" IsEnabled="{Binding ProfileEditor.CanEdit}" />
-              <TextBlock Grid.Row="3" Grid.Column="2" Text="Refund" VerticalAlignment="Center" /><ComboBox Grid.Row="3" Grid.Column="3" ItemsSource="{Binding CapabilityStatusOptions}" SelectedItem="{Binding ProfileEditor.Refund}" IsEnabled="{Binding ProfileEditor.CanEdit}" />
+              <TextBlock Text="Expansion" VerticalAlignment="Center" /><ComboBox Grid.Column="1" ItemsSource="{Binding Profiles.CapabilityStatuses}" SelectedItem="{Binding Profiles.Editor.Expansion}" IsEnabled="{Binding Profiles.Editor.CanEdit}" />
+              <TextBlock Grid.Column="2" Text="Revalue" VerticalAlignment="Center" /><ComboBox Grid.Column="3" ItemsSource="{Binding Profiles.CapabilityStatuses}" SelectedItem="{Binding Profiles.Editor.Revalue}" IsEnabled="{Binding Profiles.Editor.CanEdit}" />
+              <TextBlock Grid.Row="1" Text="Remote vend" VerticalAlignment="Center" /><ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Profiles.CapabilityStatuses}" SelectedItem="{Binding Profiles.Editor.RemoteVend}" IsEnabled="{Binding Profiles.Editor.CanEdit}" />
+              <TextBlock Grid.Row="1" Grid.Column="2" Text="Multi-currency" VerticalAlignment="Center" /><ComboBox Grid.Row="1" Grid.Column="3" ItemsSource="{Binding Profiles.CapabilityStatuses}" SelectedItem="{Binding Profiles.Editor.MultiCurrency}" IsEnabled="{Binding Profiles.Editor.CanEdit}" />
+              <TextBlock Grid.Row="2" Text="Negative vend" VerticalAlignment="Center" /><ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Profiles.CapabilityStatuses}" SelectedItem="{Binding Profiles.Editor.NegativeVend}" IsEnabled="{Binding Profiles.Editor.CanEdit}" />
+              <TextBlock Grid.Row="2" Grid.Column="2" Text="Data entry" VerticalAlignment="Center" /><ComboBox Grid.Row="2" Grid.Column="3" ItemsSource="{Binding Profiles.CapabilityStatuses}" SelectedItem="{Binding Profiles.Editor.DataEntry}" IsEnabled="{Binding Profiles.Editor.CanEdit}" />
+              <TextBlock Grid.Row="3" Text="Basket" VerticalAlignment="Center" /><ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Profiles.CapabilityStatuses}" SelectedItem="{Binding Profiles.Editor.Basket}" IsEnabled="{Binding Profiles.Editor.CanEdit}" />
+              <TextBlock Grid.Row="3" Grid.Column="2" Text="Refund" VerticalAlignment="Center" /><ComboBox Grid.Row="3" Grid.Column="3" ItemsSource="{Binding Profiles.CapabilityStatuses}" SelectedItem="{Binding Profiles.Editor.Refund}" IsEnabled="{Binding Profiles.Editor.CanEdit}" />
             </Grid>
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
-              <Button Classes="primary" Content="Save custom" Command="{Binding SaveProfileCommand}" />
-              <Button Content="Export JSON" Command="{Binding ExportProfileCommand}" />
+              <Button Classes="primary" Content="Save custom" Command="{Binding Profiles.SaveCommand}" />
+              <Button Content="Export JSON" Command="{Binding Profiles.ExportCommand}" />
             </StackPanel>
           </StackPanel>
         </Border>
         <Border Classes="card">
           <StackPanel Spacing="8">
             <TextBlock Classes="label" Text="IMPORT JSON" />
-            <TextBox Text="{Binding ProfileImportPath}" PlaceholderText="Absolute path to profile.json" />
-            <Button Content="Import as custom" Command="{Binding ImportProfileCommand}" HorizontalAlignment="Left" />
-            <TextBlock Text="{Binding ProfileMessage}" TextWrapping="Wrap" Foreground="#93A1B5" />
+            <TextBox Text="{Binding Profiles.ImportPath}" PlaceholderText="Absolute path to profile.json" />
+            <Button Content="Import as custom" Command="{Binding Profiles.ImportCommand}" HorizontalAlignment="Left" />
+            <TextBlock Text="{Binding Profiles.Message}" TextWrapping="Wrap" Foreground="#93A1B5" />
           </StackPanel>
         </Border>
       </StackPanel>

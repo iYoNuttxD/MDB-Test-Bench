@@ -1,0 +1,50 @@
+{
+  "format": "MDBTestBenchCapture",
+  "formatVersion": 1,
+  "privacySafe": true,
+  "captureId": "fixture-simulated-approved-vend-v1",
+  "application": { "name": "MDB Test Bench Test Fixture", "version": "0.1.1" },
+  "adapter": { "model": "Discovery Simulator", "printedRevision": null },
+  "host": { "operatingSystem": "Synthetic", "osVersion": "Synthetic", "architecture": "Synthetic", "dotNetVersion": "10.0" },
+  "serial": {
+    "port": null,
+    "baudRate": 9600,
+    "dataBits": 8,
+    "parity": "None",
+    "stopBits": "One",
+    "handshake": "None",
+    "readTimeoutMilliseconds": 2000,
+    "writeTimeoutMilliseconds": 2000,
+    "pollingMode": "hostManaged",
+    "wireFormat": "binaryBytes",
+    "terminator": "none"
+  },
+  "capture": {
+    "createdAtUtc": "2026-01-01T00:00:00+00:00",
+    "startedAtUtc": "2026-01-01T00:00:00+00:00",
+    "endedAtUtc": "2026-01-01T00:00:01.6+00:00",
+    "monotonicFrequency": 1000000000,
+    "resolutionNote": "Synthetic deterministic fixture; no hardware timing."
+  },
+  "userNotes": "Synthetic approved vend fixture. Contains no hardware or personal data.",
+  "probes": [],
+  "statistics": {},
+  "events": [
+    { "sequence": 1, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.1+00:00", "monotonicTimestamp": 100000000, "direction": "tx", "hex": "10 10", "base64": "EBA=", "length": 2, "operation": "RESET" },
+    { "sequence": 2, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.2+00:00", "monotonicTimestamp": 200000000, "direction": "rx", "hex": "00", "base64": "AA==", "length": 1, "operation": "ACK", "readChunkIndex": 1 },
+    { "sequence": 3, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.3+00:00", "monotonicTimestamp": 300000000, "direction": "tx", "hex": "12 12", "base64": "EhI=", "length": 2, "operation": "POLL" },
+    { "sequence": 4, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.4+00:00", "monotonicTimestamp": 400000000, "direction": "rx", "hex": "00 00", "base64": "AAA=", "length": 2, "operation": "JUST RESET", "readChunkIndex": 2 },
+    { "sequence": 5, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.5+00:00", "monotonicTimestamp": 500000000, "direction": "tx", "hex": "11 00 01 00 00 00 12", "base64": "EQABAAAAEg==", "length": 7, "operation": "SETUP CONFIG" },
+    { "sequence": 6, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.6+00:00", "monotonicTimestamp": 600000000, "direction": "rx", "hex": "01 01 18 40 01 02 05 0F 71", "base64": "AQEYQAECBQ9x", "length": 9, "operation": "READER CONFIG", "readChunkIndex": 3 },
+    { "sequence": 7, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.7+00:00", "monotonicTimestamp": 700000000, "direction": "tx", "hex": "14 01 15", "base64": "FAEV", "length": 3, "operation": "READER ENABLE" },
+    { "sequence": 8, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.8+00:00", "monotonicTimestamp": 800000000, "direction": "rx", "hex": "00", "base64": "AA==", "length": 1, "operation": "ACK", "readChunkIndex": 4 },
+    { "sequence": 9, "type": "raw", "timestampUtc": "2026-01-01T00:00:00.9+00:00", "monotonicTimestamp": 900000000, "direction": "tx", "hex": "12 12", "base64": "EhI=", "length": 2, "operation": "POLL BEGIN SESSION" },
+    { "sequence": 10, "type": "raw", "timestampUtc": "2026-01-01T00:00:01+00:00", "monotonicTimestamp": 1000000000, "direction": "rx", "hex": "03 03 E8 EE", "base64": "AwPo7g==", "length": 4, "operation": "BEGIN SESSION", "readChunkIndex": 5 },
+    { "sequence": 11, "type": "raw", "timestampUtc": "2026-01-01T00:00:01.1+00:00", "monotonicTimestamp": 1100000000, "direction": "tx", "hex": "13 00 01 F4 00 01 09", "base64": "EwAB9AABCQ==", "length": 7, "operation": "VEND REQUEST" },
+    { "sequence": 12, "type": "raw", "timestampUtc": "2026-01-01T00:00:01.2+00:00", "monotonicTimestamp": 1200000000, "direction": "rx", "hex": "05 01 F4 FA", "base64": "BQH0+g==", "length": 4, "operation": "VEND APPROVED", "readChunkIndex": 6 },
+    { "sequence": 13, "type": "raw", "timestampUtc": "2026-01-01T00:00:01.3+00:00", "monotonicTimestamp": 1300000000, "direction": "tx", "hex": "13 02 00 01 16", "base64": "EwIAARY=", "length": 5, "operation": "VEND SUCCESS" },
+    { "sequence": 14, "type": "raw", "timestampUtc": "2026-01-01T00:00:01.4+00:00", "monotonicTimestamp": 1400000000, "direction": "rx", "hex": "00", "base64": "AA==", "length": 1, "operation": "ACK", "readChunkIndex": 7 },
+    { "sequence": 15, "type": "raw", "timestampUtc": "2026-01-01T00:00:01.5+00:00", "monotonicTimestamp": 1500000000, "direction": "tx", "hex": "13 04 17", "base64": "EwQX", "length": 3, "operation": "SESSION COMPLETE" },
+    { "sequence": 16, "type": "raw", "timestampUtc": "2026-01-01T00:00:01.6+00:00", "monotonicTimestamp": 1600000000, "direction": "rx", "hex": "07 07", "base64": "Bwc=", "length": 2, "operation": "END SESSION", "readChunkIndex": 8 }
+  ]
+}

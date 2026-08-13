@@ -3,11 +3,23 @@
 MDB Test Bench v0.1.1 is a cross-platform desktop application whose logical role is the VMC/master side of an MDB test setup.
 
 ```text
-Avalonia Views
-  -> MainWindowViewModel / application services
-      -> TestEngine
-      -> Transport
-      -> Core
+                         UI
+                          |
+             +------------+------------+
+             |                         |
+        Structured                  Discovery
+             |                         |
+       MDB Commands                RAW capture
+             |                         |
+    MdbCashlessEncoder               Serial
+             |                         |
+       MDB byte frames                Wafer
+             |
+      IWaferProtocolCodec
+             |
+      Wafer transport
+             |
+           Serial
 ```
 
 ## Boundaries
@@ -47,15 +59,17 @@ Discovery capture is also a Transport responsibility. `WaferDiscoveryCaptureCont
 
 `SimulatedCashlessTransport` implements both logical and raw development paths. Structured requests pass through `MdbCashlessEncoder`/`MdbCashlessDecoder`, and simulated responses are valid MDB response blocks decoded by the same Core decoder. It receives or creates a `VmcSimulator`, so the same Core state machine is exercised by UI flows and headless end-to-end tests. It supports Normal, AlwaysApprove, AlwaysDeny, Timeout, MalformedResponse, and UnexpectedResponse behavior.
 
-`MdbTestBench.TestEngine` executes typed JSON scenarios sequentially, reports expected/received values and duration, writes to the shared structured log sink, supports cancellation, and enforces scenario deadlines.
+`MdbTestBench.TestEngine` executes typed JSON scenarios sequentially, reports expected/received values and duration, writes to the shared structured log sink, supports cancellation, and enforces scenario deadlines. Its primary built-in path maps each semantic step through an injectable `IMdbCashlessEncoder`; the simulator decodes that command block, encodes its response block and decodes the response before assertions and state transitions.
 
-`MdbTestBench.App` composes services explicitly. View code-behind contains only view initialization, clipboard integration, and window-lifecycle persistence; MDB rules remain outside code-behind.
+`MdbTestBench.App` composes services explicitly. `MainWindowViewModel` retains only navigation, shared connection/settings composition and dashboard projections. Page behavior is divided among `Dashboard` projections, `ManualViewModel`, `AutomaticViewModel`, `ProfilesViewModel`, `LogsViewModel`, `WaferDiscoveryViewModel`, and Settings properties. The cohesive Discovery page remains larger because it owns one capture lifecycle, not unrelated application features. View code-behind contains only view initialization, clipboard integration, and window-lifecycle persistence; MDB rules remain outside code-behind.
+
+Application log/status, structured MDB traffic log, and raw adapter capture are separate data products. The first two use the bounded `IMdbLogSink`; Discovery evidence uses its own append-only spool and capture schema. Hardware raw writes are not exposed through `WorkbenchSession`: they are available only through the Discovery controller, which applies the selected wire representation, transmits, and records the exact on-wire bytes.
 
 ## State and concurrency
 
 The logical lifecycle is Disconnected → Connected → Reset → Disabled → Enabled → SessionIdle → VendPending → VendApproved/VendDenied → SessionComplete → Enabled. RESET receives ACK, and JUST RESET is a distinct POLL response. Invalid Structured commands are blocked through `VmcStateMachine.CanFire`; Advanced raw actions remain possible only with an explicit warning and confirmation.
 
-All transport/test operations use `async`/`await` and `CancellationToken`. Stateful exchanges are serialized with semaphores. Transports implement `IAsyncDisposable`. Discovery rejects starting while the normal workbench owns a connection, preventing competing reads from one serial port. No busy-wait, `Thread.Sleep`, database, cloud service, or web backend is used.
+All transport/test operations use `async`/`await` and `CancellationToken`. Stateful exchanges are serialized with semaphores. Transports implement `IAsyncDisposable`. Discovery rejects starting while the normal workbench owns a connection, preventing competing reads from one serial port. Capture stop is idempotent, waits for any in-flight write, closes the transport once, and finalizes one artifact; subscriber/UI failure cannot interrupt spool persistence. No busy-wait, `Thread.Sleep`, database, cloud service, or web backend is used.
 
 In-memory traffic retention and the Discovery live view are bounded to 10,000 entries. Raw HEX and diagnostic payloads are bounded to 4,096 bytes, serial receive buffers are capped at 65,536 bytes, capture spools default to 100 MB, imports default to 100 MB/1,000,000 events, and scenarios are validated before execution. Capture summary analysis streams the spool instead of retaining event objects.
 

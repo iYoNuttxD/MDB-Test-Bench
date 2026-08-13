@@ -76,3 +76,11 @@ Do not implement a production codec until the evidence above is repeatable and r
 14. Execute probes only after individual byte review and confirmation. Any BinaryBytes/AsciiHex or terminator comparison is a controlled experiment.
 15. Stop capture and review summary, errors and size.
 16. Export for Analysis, reopen the same `.mdbcap.json`, verify event/chunk counts, calculate a file hash, preserve the original and share it with the notes. Only then plan repeatable RESET/SETUP/ENABLE/vend experiments.
+
+Before leaving the simulator preflight, the packaged CLI may generate and reopen a portable sample without a GUI:
+
+```bash
+MDB-Test-Bench --discovery-smoke-test --capture-output=/absolute/path/sample-simulator.mdbcap.json
+```
+
+A zero exit code proves that simulated RX, confirmed TX and a marker survived export/import. It does not validate serial hardware or the Wafer protocol.

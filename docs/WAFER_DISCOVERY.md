@@ -13,7 +13,7 @@ Serial read chunk -> append-only temporary spool -> live view
 
 Every successful `IRawByteTransport.ReadAsync` result becomes exactly one RX event. Chunks are not concatenated, split, stripped, decoded, or normalized. TX evidence contains the exact bytes passed to the raw transport after the operator-selected `BinaryBytes` or `AsciiHex` formatter and terminator. Interpretation is a separate overlay and can be recalculated when a capture is opened later.
 
-The temporary spool is UTF-8 JSON Lines and is written incrementally. The default limit is 100 MB and is configurable from 1 to 1024 MB. At the limit, capture stops with a warning. The live view retains at most 10,000 display rows; the spool remains the export source, so view bounding does not discard exported evidence.
+The temporary spool is UTF-8 JSON Lines and is written incrementally. The default limit is 100 MB and is configurable from 1 to 1024 MB. At the limit, capture stops with a warning. The live view retains at most 10,000 display rows; the spool remains the export source, so view bounding does not discard exported evidence. Stop is safe to request concurrently, waits for an in-flight TX, and finalizes one artifact. A failing display subscriber cannot stop or remove raw evidence.
 
 ## Timing limits
 
@@ -31,7 +31,9 @@ Periodic RX analysis reports median, minimum, and maximum application-observed i
 6. To transmit, enter HEX in **Raw Adapter / Wafer Debug**, review the wire format and terminator in Settings, check the confirmation box, then send.
 7. Save useful inputs as probes. Saving or loading a probe never sends it.
 8. Stop and choose **Export for Analysis**. Review the file before sharing.
-9. Enter a capture path and choose **Open Capture** to inspect it without hardware. Opening never retransmits bytes.
+9. Enter a capture path and choose **Open Capture** to inspect it without hardware. Opening never retransmits bytes, recalculates the MDB overlay/statistics, restores saved probes, and can create a new privacy-safe export from the imported document.
+
+The header badge distinguishes `SIMULATOR CAPTURE`, `HARDWARE / WAFER CAPTURE`, and `OFFLINE CAPTURE ANALYSIS`. These modes do not share a physical TX path.
 
 The Discovery simulator is prominently identified as simulation and creates separate RX chunks, including a split sample, for development validation. It does not model Wafer framing.
 
