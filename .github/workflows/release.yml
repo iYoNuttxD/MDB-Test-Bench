@@ -4,15 +4,66 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semantic version without the v prefix (for example 0.1.1)
+        required: true
+        type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
+  validate-version:
+    name: Validate release request
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Resolve and validate SemVer
+        id: version
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            version="$INPUT_VERSION"
+          else
+            version="${REF_NAME#v}"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid semantic version: $version" >&2
+            exit 2
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Verify tag exists and release does not
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; refusing to overwrite it." >&2
+            exit 1
+          fi
+
   build-and-package:
-    name: Package ${{ matrix.runtime }}
+    name: Validate and package ${{ matrix.runtime }}
+    needs: validate-version
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 35
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -27,33 +78,42 @@ jobs:
             os: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ needs.validate-version.outputs.tag }}
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4.3.1
         with:
           dotnet-version: 10.0.x
 
+      - name: Verify source version
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate-version.outputs.version }}
+        run: |
+          source_version="$(dotnet msbuild Directory.Build.props -getProperty:VersionPrefix -nologo)"
+          test "$source_version" = "$VERSION"
+
       - name: Restore
         run: dotnet restore MDBTestBench.sln
 
-      - name: Test
-        run: dotnet test MDBTestBench.sln --configuration Release --no-restore
+      - name: Build Release
+        run: dotnet build MDBTestBench.sln --configuration Release --no-restore
+
+      - name: Test Release
+        run: dotnet test MDBTestBench.sln --configuration Release --no-build
 
       - name: Package Windows
         if: runner.os == 'Windows'
         shell: pwsh
-        run: |
-          $version = '${{ github.ref_name }}'.TrimStart('v')
-          ./scripts/package.ps1 -RuntimeIdentifier '${{ matrix.runtime }}' -Version $version
+        run: ./scripts/package.ps1 -RuntimeIdentifier '${{ matrix.runtime }}' -Version '${{ needs.validate-version.outputs.version }}'
 
       - name: Package macOS or Linux
         if: runner.os != 'Windows'
         shell: bash
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          ./scripts/package.sh '${{ matrix.runtime }}' "$version"
+        run: ./scripts/package.sh '${{ matrix.runtime }}' '${{ needs.validate-version.outputs.version }}'
 
       - name: Upload packaged release asset
         uses: actions/upload-artifact@v4.6.2
@@ -65,25 +125,52 @@ jobs:
 
   publish-release:
     name: Publish GitHub Release
-    needs: build-and-package
+    needs: [validate-version, build-and-package]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ needs.validate-version.outputs.tag }}
+
       - name: Download packaged assets
         uses: actions/download-artifact@v4.3.0
         with:
           pattern: package-*
-          path: artifacts
+          path: artifacts/packages
           merge-multiple: true
 
-      - name: Create release and upload assets
+      - name: Verify assets and generate SHA-256 checksums
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate-version.outputs.version }}
+        run: |
+          files=(
+            "artifacts/packages/MDB-Test-Bench-v${VERSION}-windows-x64.zip"
+            "artifacts/packages/MDB-Test-Bench-v${VERSION}-macos-arm64.zip"
+            "artifacts/packages/MDB-Test-Bench-v${VERSION}-macos-x64.zip"
+            "artifacts/packages/MDB-Test-Bench-v${VERSION}-linux-x64.tar.gz"
+          )
+          for file in "${files[@]}"; do test -s "$file"; done
+          (cd artifacts/packages && sha256sum "${files[@]##*/}") > artifacts/packages/SHA256SUMS.txt
+
+      - name: Create release and upload final assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create "${{ github.ref_name }}"
-          artifacts/*
-          --repo "${{ github.repository }}"
-          --title "MDB Test Bench ${{ github.ref_name }}"
-          --generate-notes
+          TAG: ${{ needs.validate-version.outputs.tag }}
+          VERSION: ${{ needs.validate-version.outputs.version }}
+        shell: bash
+        run: |
+          gh release create "$TAG" \
+            artifacts/packages/MDB-Test-Bench-v${VERSION}-windows-x64.zip \
+            artifacts/packages/MDB-Test-Bench-v${VERSION}-macos-arm64.zip \
+            artifacts/packages/MDB-Test-Bench-v${VERSION}-macos-x64.zip \
+            artifacts/packages/MDB-Test-Bench-v${VERSION}-linux-x64.tar.gz \
+            artifacts/packages/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "MDB Test Bench $TAG" \
+            --notes-file "docs/release-notes/v${VERSION}.md"

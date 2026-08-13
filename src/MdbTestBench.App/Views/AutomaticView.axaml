@@ -4,7 +4,7 @@
   <Grid Margin="28" ColumnDefinitions="310,*" ColumnSpacing="16">
     <Border Classes="card">
       <Grid RowDefinitions="Auto,*">
-        <TextBlock Classes="label" Text="BUILT-IN SIMULATOR SCENARIOS" />
+        <TextBlock Classes="label" Text="{DynamicResource BuiltInScenarios}" />
         <ListBox Grid.Row="1" Margin="0,10,0,0" ItemsSource="{Binding Automatic.Scenarios}" SelectedItem="{Binding Automatic.Selected}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:ScenarioDisplayViewModel">
@@ -25,8 +25,8 @@
             <TextBlock Classes="value" Text="{Binding Automatic.Selected.Name}" />
             <TextBlock Text="{Binding Automatic.Selected.Description}" TextWrapping="Wrap" Foreground="#93A1B5" />
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <Button Classes="primary" Content="Run scenario" Command="{Binding Automatic.RunCommand}" />
-              <Button Content="Cancel" Command="{Binding Automatic.CancelCommand}" IsEnabled="{Binding Automatic.IsRunning}" />
+              <Button Classes="primary" Content="{DynamicResource RunScenario}" Command="{Binding Automatic.RunCommand}" />
+              <Button Content="{DynamicResource Cancel}" Command="{Binding Automatic.CancelCommand}" IsEnabled="{Binding Automatic.IsRunning}" />
               <TextBlock Text="{Binding Automatic.Selected.Result}" VerticalAlignment="Center" FontWeight="Bold" />
               <TextBlock Text="{Binding Automatic.Selected.Duration}" VerticalAlignment="Center" Foreground="#93A1B5" />
             </StackPanel>
@@ -35,10 +35,10 @@
         <Border Classes="card">
           <Grid RowDefinitions="Auto,*">
             <Grid ColumnDefinitions="45,*,100,150" Margin="0,0,0,7">
-              <TextBlock Classes="label" Text="#" />
-              <TextBlock Grid.Column="1" Classes="label" Text="STEP" />
-              <TextBlock Grid.Column="2" Classes="label" Text="RESULT" />
-              <TextBlock Grid.Column="3" Classes="label" Text="RECEIVED" />
+              <TextBlock Classes="label" Text="{DynamicResource Number}" />
+              <TextBlock Grid.Column="1" Classes="label" Text="{DynamicResource Step}" />
+              <TextBlock Grid.Column="2" Classes="label" Text="{DynamicResource Result}" />
+              <TextBlock Grid.Column="3" Classes="label" Text="{DynamicResource Received}" />
             </Grid>
             <ItemsControl Grid.Row="1" ItemsSource="{Binding Automatic.Selected.Steps}">
               <ItemsControl.ItemTemplate>
@@ -56,9 +56,9 @@
         </Border>
         <Border Classes="card">
           <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="22">
-            <TextBlock Text="{Binding Automatic.Selected.Steps.Count, StringFormat='Total  {0}'}" />
-            <TextBlock Grid.Column="1" Text="{Binding Automatic.Passes, StringFormat='Passes  {0}'}" Foreground="#41C97A" />
-            <TextBlock Grid.Column="2" Text="{Binding Automatic.Failures, StringFormat='Failures  {0}'}" Foreground="#F08A91" />
+            <TextBlock><Run Text="{DynamicResource Total}"/><Run Text="  "/><Run Text="{Binding Automatic.Selected.Steps.Count}"/></TextBlock>
+            <TextBlock Grid.Column="1" Foreground="#41C97A"><Run Text="{DynamicResource Passes}"/><Run Text="  "/><Run Text="{Binding Automatic.Passes}"/></TextBlock>
+            <TextBlock Grid.Column="2" Foreground="#F08A91"><Run Text="{DynamicResource Failures}"/><Run Text="  "/><Run Text="{Binding Automatic.Failures}"/></TextBlock>
             <TextBlock Grid.Column="3" Text="{Binding Automatic.Summary}" TextWrapping="Wrap" />
           </Grid>
         </Border>

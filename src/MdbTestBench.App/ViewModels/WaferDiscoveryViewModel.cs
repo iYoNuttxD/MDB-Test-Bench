@@ -13,6 +13,7 @@ using MdbTestBench.Transport.Capture;
 using MdbTestBench.Transport.Configuration;
 using MdbTestBench.Transport.Serial;
 using MdbTestBench.Transport.Simulation;
+using MdbTestBench.App.Localization;
 
 namespace MdbTestBench.App.ViewModels;
 
@@ -22,11 +23,12 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     private readonly AppPaths _paths;
     private readonly Func<AppSettings> _settings;
     private readonly Func<bool> _workbenchConnected;
+    private readonly ILocalizationService _localization;
     private readonly WaferCaptureSerializer _serializer = new();
     private WaferDiscoveryCaptureController? _controller;
     private WaferCaptureArtifact? _artifact;
     private WaferCaptureDocument? _document;
-    private string _status = "Ready — no port opens automatically.";
+    private string _status;
     private string _adapterModel = "MDB-RS232 PC Adapter";
     private string _printedRevision = "2022061K5";
     private string _notes = string.Empty;
@@ -43,12 +45,16 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     private string _displayMode = "HEX + ASCII";
     private bool _isCapturing;
     private long _captureSizeBytes;
-    private string _analysis = "No capture loaded.";
-    private string _operationMode = "READY — transport selected in Settings";
+    private string _analysis;
+    private string _operationMode;
 
-    public WaferDiscoveryViewModel(AppPaths paths, Func<AppSettings> settings, Func<bool> workbenchConnected)
+    public WaferDiscoveryViewModel(AppPaths paths, Func<AppSettings> settings, Func<bool> workbenchConnected,
+        ILocalizationService? localization = null)
     {
         _paths = paths; _settings = settings; _workbenchConnected = workbenchConnected;
+        _localization = localization ?? new LocalizationService();
+        _status = _localization.Get("DiscoveryReady"); _analysis = _localization.Get("NoCaptureLoaded");
+        _operationMode = _localization.Get("DiscoveryReadyMode");
         StartCommand = new AsyncRelayCommand(_ => StartAsync());
         StopCommand = new AsyncRelayCommand(_ => StopAsync());
         AddMarkerCommand = new AsyncRelayCommand(_ => AddMarkerAsync());
@@ -86,8 +92,8 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
         {
             var parsed = HexParser.Parse(RawHex);
             return parsed.IsValid
-                ? $"Valid · {parsed.Bytes.Length} logical byte(s) · {RawAdapterConfiguration}"
-                : parsed.Error ?? "Invalid";
+                ? _localization.Format("ValidLogicalBytes", parsed.Bytes.Length, RawAdapterConfiguration)
+                : _localization.Get("InvalidHex");
         }
     }
     public string ProbeName { get => _probeName; set => SetProperty(ref _probeName, value); }
@@ -99,7 +105,7 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     public bool ShowRx { get => _showRx; set { if (SetProperty(ref _showRx, value)) ApplyDocument(); } }
     public string DisplayMode { get => _displayMode; set { if (SetProperty(ref _displayMode, value)) ApplyDocument(); } }
     public bool IsCapturing { get => _isCapturing; private set => SetProperty(ref _isCapturing, value); }
-    public string CaptureSize => $"{_captureSizeBytes / 1024d / 1024d:0.00} MB";
+    public string CaptureSize => string.Format(_localization.CurrentCulture, "{0:N2} MB", _captureSizeBytes / 1024d / 1024d);
     public string Analysis { get => _analysis; private set => SetProperty(ref _analysis, value); }
     public string OperationMode { get => _operationMode; private set => SetProperty(ref _operationMode, value); }
     public string RawAdapterConfiguration
@@ -107,9 +113,9 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
         get
         {
             var settings = _settings();
-            var port = settings.SelectedTransport == TransportKind.Simulated ? "Virtual / Simulator" :
-                string.IsNullOrWhiteSpace(settings.SerialPort) ? "No port selected" : settings.SerialPort;
-            return $"Port: {port} · Wire format: {settings.WireFormat} · Terminator: {settings.AsciiHexTerminator}";
+            var port = settings.SelectedTransport == TransportKind.Simulated ? _localization.Get("VirtualSimulator") :
+                string.IsNullOrWhiteSpace(settings.SerialPort) ? _localization.Get("NoPortSelected") : settings.SerialPort;
+            return _localization.Format("RawAdapterConfiguration", port, settings.WireFormat, settings.AsciiHexTerminator);
         }
     }
 
@@ -118,12 +124,12 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
         try
         {
             if (IsCapturing) return;
-            if (_workbenchConnected()) throw new InvalidOperationException("Disconnect the main workbench session before Discovery uses the transport.");
+            if (_workbenchConnected()) throw new InvalidOperationException(_localization.Get("DiscoveryDisconnectWorkbench"));
             await DisposeControllerAsync();
             DeleteArtifactSpool();
             var settings = _settings();
             if (settings.SelectedTransport == TransportKind.WaferMdbRs232 && string.IsNullOrWhiteSpace(settings.SerialPort))
-                throw new InvalidOperationException("Select a serial port in Settings first.");
+                throw new InvalidOperationException(_localization.Get("DiscoverySelectPort"));
             var now = DateTimeOffset.UtcNow;
             var header = new WaferCaptureDocument
             {
@@ -159,10 +165,10 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
             Events.Clear(); _document = null; _artifact = null; _captureSizeBytes = 0;
             await _controller.StartAsync();
             IsCapturing = true;
-            OperationMode = settings.SelectedTransport == TransportKind.Simulated ? "SIMULATOR CAPTURE" : "HARDWARE / WAFER CAPTURE";
+            OperationMode = settings.SelectedTransport == TransportKind.Simulated ? _localization.Get("SimulatorCapture") : _localization.Get("HardwareCapture");
             RaisePropertyChanged(nameof(RawAdapterConfiguration));
             Status = settings.SelectedTransport == TransportKind.Simulated
-                ? "● Capturing — SIMULATION (no hardware)" : "● Capturing raw serial chunks";
+                ? _localization.Get("CapturingSimulation") : _localization.Get("CapturingRawSerial");
         }
         catch (Exception exception) { Status = Friendly(exception); }
     }
@@ -177,7 +183,7 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
             _captureSizeBytes = _artifact.CaptureSizeBytes;
             IsCapturing = false;
             SetAnalysis(_document.Statistics);
-            Status = _artifact.SizeLimitReached ? "Capture stopped at configured size limit." : "Capture stopped. Ready to export.";
+            Status = _artifact.SizeLimitReached ? _localization.Get("CaptureStoppedSizeLimit") : _localization.Get("CaptureStoppedReady");
             RaisePropertyChanged(nameof(CaptureSize));
         }
         catch (Exception exception) { IsCapturing = false; Status = Friendly(exception); }
@@ -187,7 +193,7 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     {
         try
         {
-            if (_controller is null || !IsCapturing) throw new InvalidOperationException("Start capture before adding a marker.");
+            if (_controller is null || !IsCapturing) throw new InvalidOperationException(_localization.Get("StartCaptureBeforeMarker"));
             await _controller.AddMarkerAsync(MarkerText); MarkerText = string.Empty;
         }
         catch (Exception exception) { Status = Friendly(exception); }
@@ -197,14 +203,14 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     {
         try
         {
-            if (_controller is null || !IsCapturing) throw new InvalidOperationException("Start capture before transmitting.");
-            if (!RawConfirmed) throw new InvalidOperationException("Confirm the exact adapter bytes before transmitting.");
+            if (_controller is null || !IsCapturing) throw new InvalidOperationException(_localization.Get("StartCaptureBeforeTransmit"));
+            if (!RawConfirmed) throw new InvalidOperationException(_localization.Get("ConfirmAdapterBytesError"));
             var parsed = HexParser.Parse(RawHex);
             if (!parsed.IsValid) throw new InvalidDataException(parsed.Error);
             var settings = _settings();
             await _controller.SendAsync(parsed.Bytes, new SerialWireFormatOptions
             { Format = settings.WireFormat, Terminator = settings.AsciiHexTerminator }, "RawAdapterManual");
-            RawConfirmed = false; Status = "Exact on-wire TX bytes recorded in capture.";
+            RawConfirmed = false; Status = _localization.Get("TxRecorded");
         }
         catch (Exception exception) { Status = Friendly(exception); }
     }
@@ -212,19 +218,19 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     private void SaveProbe()
     {
         var parsed = HexParser.Parse(RawHex);
-        if (string.IsNullOrWhiteSpace(ProbeName) || !parsed.IsValid) { Status = "Probe name and valid HEX bytes are required."; return; }
+        if (string.IsNullOrWhiteSpace(ProbeName) || !parsed.IsValid) { Status = _localization.Get("ProbeNameHexRequired"); return; }
         var settings = _settings();
         var probe = new WaferProbe { Name = ProbeName.Trim(), Hex = parsed.NormalizedHex!, WireFormat = settings.WireFormat,
             Terminator = settings.AsciiHexTerminator, Notes = EmptyToNull(ProbeNotes) };
         Probes.Add(probe); SelectedProbe = probe; _controller?.AddProbe(probe);
-        Status = "Probe saved; it will never execute automatically.";
+        Status = _localization.Get("ProbeSaved");
     }
 
     private async Task SendProbeAsync()
     {
-        if (SelectedProbe is null) { Status = "Select a saved probe first."; return; }
+        if (SelectedProbe is null) { Status = _localization.Get("SelectProbeFirst"); return; }
         RawHex = SelectedProbe.Hex; RawConfirmed = false;
-        Status = "Probe loaded. Review it and check confirmation before Send Raw Adapter.";
+        Status = _localization.Get("ProbeLoaded");
         await Task.CompletedTask;
     }
 
@@ -234,12 +240,12 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
         {
             if (IsCapturing) await StopAsync();
             var header = _artifact?.Header ?? _document
-                ?? throw new InvalidOperationException("Stop or open a capture before exporting it.");
+                ?? throw new InvalidOperationException(_localization.Get("StopOrOpenBeforeExport"));
             var file = WaferCaptureSerializer.CreateSafeFileName(header.Adapter.PrintedRevision, header.Capture.StartedAtUtc);
             CapturePath = Path.Combine(_paths.Captures, file);
             if (_artifact is not null) await _serializer.ExportAsync(_artifact, CapturePath);
             else await _serializer.ExportDocumentAsync(header, CapturePath);
-            Status = $"Exported privacy-safe raw evidence. Review before sharing: {CapturePath}";
+            Status = _localization.Format("CaptureExported", CapturePath);
         }
         catch (Exception exception) { Status = Friendly(exception); }
     }
@@ -248,9 +254,9 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     {
         try
         {
-            if (_document is null) throw new InvalidOperationException("Stop or open a capture first.");
+            if (_document is null) throw new InvalidOperationException(_localization.Get("StopOrOpenFirst"));
             var path = Path.Combine(_paths.Captures, $"capture-{_document.CaptureId}.txt");
-            await _serializer.ExportSummaryAsync(_document, path); Status = $"Human-readable summary exported: {path}";
+            await _serializer.ExportSummaryAsync(_document, path); Status = _localization.Format("SummaryExported", path);
         }
         catch (Exception exception) { Status = Friendly(exception); }
     }
@@ -259,8 +265,8 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     {
         try
         {
-            if (IsCapturing) throw new InvalidOperationException("Stop the active capture before opening a file.");
-            if (string.IsNullOrWhiteSpace(CapturePath)) throw new InvalidOperationException("Enter a .mdbcap.json path.");
+            if (IsCapturing) throw new InvalidOperationException(_localization.Get("StopCaptureBeforeOpen"));
+            if (string.IsNullOrWhiteSpace(CapturePath)) throw new InvalidOperationException(_localization.Get("EnterCapturePath"));
             var loaded = await _serializer.LoadAsync(CapturePath);
             var interpreter = new WaferCaptureInterpreter();
             var events = loaded.Events.Select(item => item.IsRaw && item.Direction is { } direction
@@ -274,15 +280,15 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
             _captureSizeBytes = new FileInfo(CapturePath).Length;
             ApplyDocument(); SetAnalysis(_document.Statistics);
             RaisePropertyChanged(nameof(CaptureSize));
-            OperationMode = "OFFLINE CAPTURE ANALYSIS — hardware disconnected";
-            Status = $"Capture opened offline: {_document.CaptureId}. No bytes were retransmitted.";
+            OperationMode = _localization.Get("OfflineCaptureAnalysis");
+            Status = _localization.Format("CaptureOpenedOffline", _document.CaptureId);
         }
         catch (Exception exception) { Status = Friendly(exception); }
     }
 
     private void OnEvent(object? sender, WaferCaptureEvent item) => Dispatcher.UIThread.Post(() =>
     {
-        if (Matches(item)) Events.Add(new(item, DisplayMode));
+        if (Matches(item)) Events.Add(new(item, DisplayMode, _localization));
         while (Events.Count > MaximumVisibleEvents) Events.RemoveAt(0);
         _captureSizeBytes = _controller?.CaptureSizeBytes ?? _captureSizeBytes;
         RaisePropertyChanged(nameof(CaptureSize));
@@ -292,7 +298,7 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     {
         if (_document is null) return;
         Events.Clear();
-        foreach (var item in _document.Events.Where(Matches).TakeLast(MaximumVisibleEvents)) Events.Add(new(item, DisplayMode));
+        foreach (var item in _document.Events.Where(Matches).TakeLast(MaximumVisibleEvents)) Events.Add(new(item, DisplayMode, _localization));
     }
 
     private bool Matches(WaferCaptureEvent item)
@@ -303,17 +309,23 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     }
 
     private void SetAnalysis(WaferCaptureStatistics stats) => Analysis =
-        $"TX {stats.TxEvents} events / {stats.TxBytes} bytes · RX {stats.RxEvents} events / {stats.RxBytes} bytes · " +
-        $"Errors {stats.Errors} · Markers {stats.Markers} · {stats.TrafficAppearance}\n" +
-        $"RX lengths: {FormatCounts(stats.MostCommonRxLengths)} · prefixes: {FormatCounts(stats.RepeatedPrefixes)} · suffixes: {FormatCounts(stats.RepeatedSuffixes)}\n" +
-        $"Possible delimiters: CR={stats.PossibleCrDelimiter}, LF={stats.PossibleLfDelimiter}, CRLF={stats.PossibleCrLfDelimiter} · " +
-        $"possible MDB {stats.PossibleMdbResponses}, unknown {stats.UnknownRawEvents}\n" +
+        _localization.Format("AnalysisTotals", stats.TxEvents, stats.TxBytes, stats.RxEvents, stats.RxBytes, stats.Errors, stats.Markers, LocalizeTrafficAppearance(stats.TrafficAppearance)) + "\n" +
+        _localization.Format("AnalysisPatterns", FormatCounts(stats.MostCommonRxLengths), FormatCounts(stats.RepeatedPrefixes), FormatCounts(stats.RepeatedSuffixes)) + "\n" +
+        _localization.Format("AnalysisDelimiters", stats.PossibleCrDelimiter, stats.PossibleLfDelimiter, stats.PossibleCrLfDelimiter, stats.PossibleMdbResponses, stats.UnknownRawEvents) + "\n" +
         (stats.PeriodicRxObservation.Detected
-            ? $"Periodic RX activity observed: median {stats.PeriodicRxObservation.MedianIntervalMilliseconds:0.###} ms. Possible adapter-managed behavior; observation only."
-            : "No stable periodic RX activity observed. This does not determine POLL ownership.");
+            ? _localization.Format("PeriodicActivity", stats.PeriodicRxObservation.MedianIntervalMilliseconds)
+            : _localization.Get("NoPeriodicActivity"));
 
-    private static string FormatCounts(IReadOnlyDictionary<string, long> values) => values.Count == 0
-        ? "none" : string.Join(", ", values.Select(item => $"{item.Key}×{item.Value}"));
+    private string LocalizeTrafficAppearance(string value) => value switch
+    {
+        "ASCII-looking" => _localization.Get("TrafficAsciiLooking"),
+        "Binary-looking" => _localization.Get("TrafficBinaryLooking"),
+        "Mixed" => _localization.Get("TrafficMixed"),
+        _ => _localization.Get("TrafficUnknown")
+    };
+
+    private string FormatCounts(IReadOnlyDictionary<string, long> values) => values.Count == 0
+        ? _localization.Get("NoneLower") : string.Join(", ", values.Select(item => $"{item.Key}×{item.Value}"));
 
     private async Task DisposeControllerAsync()
     {
@@ -338,13 +350,43 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
     }
 
     private static string? EmptyToNull(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    private static string Friendly(Exception exception) => exception switch
+    private string Friendly(Exception exception) => exception switch
     {
-        InvalidDataException or InvalidOperationException or NotSupportedException => exception.Message,
-        UnauthorizedAccessException => "Permission denied while opening the selected serial port.",
-        IOException => "Serial or capture file I/O failed. Check the adapter, permissions and path.",
-        _ => $"Discovery error: {exception.Message}"
+        InvalidOperationException => exception.Message,
+        InvalidDataException or NotSupportedException => _localization.Get("InvalidCaptureData"),
+        UnauthorizedAccessException => _localization.Get("DiscoveryPermissionDenied"),
+        IOException => _localization.Get("DiscoveryIoError"),
+        _ => _localization.Format("DiscoveryError", exception.Message)
     };
+
+    public void RefreshLocalization()
+    {
+        if (IsCapturing)
+        {
+            var simulated = _settings().SelectedTransport == TransportKind.Simulated;
+            OperationMode = simulated ? _localization.Get("SimulatorCapture") : _localization.Get("HardwareCapture");
+            Status = simulated ? _localization.Get("CapturingSimulation") : _localization.Get("CapturingRawSerial");
+        }
+        else if (_document is null)
+        {
+            Status = _localization.Get("DiscoveryReady"); Analysis = _localization.Get("NoCaptureLoaded");
+            OperationMode = _localization.Get("DiscoveryReadyMode");
+        }
+        else if (_artifact is null)
+        {
+            OperationMode = _localization.Get("OfflineCaptureAnalysis");
+            Status = _localization.Format("CaptureOpenedOffline", _document.CaptureId);
+        }
+        else
+        {
+            var simulated = _settings().SelectedTransport == TransportKind.Simulated;
+            OperationMode = simulated ? _localization.Get("SimulatorCapture") : _localization.Get("HardwareCapture");
+            Status = _artifact.SizeLimitReached ? _localization.Get("CaptureStoppedSizeLimit") : _localization.Get("CaptureStoppedReady");
+        }
+        if (_document is not null) SetAnalysis(_document.Statistics);
+        RaisePropertyChanged(nameof(RawValidation)); RaisePropertyChanged(nameof(RawAdapterConfiguration)); RaisePropertyChanged(nameof(CaptureSize));
+        ApplyDocument();
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -356,16 +398,28 @@ public sealed class WaferDiscoveryViewModel : ViewModelBase, IAsyncDisposable
 
 public sealed class WaferCaptureEventViewModel
 {
-    public WaferCaptureEventViewModel(WaferCaptureEvent item, string displayMode) { Event = item; Display = Format(item, displayMode); }
+    private readonly ILocalizationService _localization;
+    public WaferCaptureEventViewModel(WaferCaptureEvent item, string displayMode, ILocalizationService localization)
+    { Event = item; Display = Format(item, displayMode); _localization = localization; }
     public WaferCaptureEvent Event { get; }
-    public string Timestamp => Event.TimestampUtc.ToString("HH:mm:ss.ffffff", CultureInfo.InvariantCulture);
+    public string Timestamp => Event.TimestampUtc.ToString("T", _localization.CurrentCulture) + Event.TimestampUtc.ToString(".ffffff", CultureInfo.InvariantCulture);
     public string Direction => Event.Direction?.ToString().ToUpperInvariant() ?? Event.Type.ToString().ToUpperInvariant();
     public string Display { get; }
     public string Details => Event.IsRaw
-        ? $"LEN {Event.Length} · Δ {Event.DeltaMicroseconds:0.###} µs · chunk {Event.ReadChunkIndex?.ToString(CultureInfo.InvariantCulture) ?? "—"}"
-        : Event.Text ?? Event.ErrorMessage ?? Event.Operation;
+        ? _localization.Format("CaptureEventDetails", Event.Length, Event.DeltaMicroseconds, Event.ReadChunkIndex?.ToString(CultureInfo.InvariantCulture) ?? "—")
+        : Event.TransportState switch
+        {
+            "SerialOpened" => _localization.Get("TransportStateSerialOpened"),
+            "SerialClosed" => _localization.Get("TransportStateSerialClosed"),
+            _ => Event.Text ?? Event.ErrorMessage ?? Event.Operation
+        };
     public string Interpretation => Event.PossibleMdbInterpretation is null ? string.Empty
-        : $"Possible MDB: {Event.PossibleMdbInterpretation.Description} · {Event.PossibleMdbInterpretation.Confidence}";
+        : _localization.Format(
+            "PossibleMdb",
+            Event.PossibleMdbInterpretation.Confidence == MdbInterpretationConfidence.Unknown
+                ? _localization.Get("UnknownMdbData")
+                : Event.PossibleMdbInterpretation.Description,
+            _localization.Get($"Interpretation{Event.PossibleMdbInterpretation.Confidence}"));
 
     private static string Format(WaferCaptureEvent item, string mode)
     {

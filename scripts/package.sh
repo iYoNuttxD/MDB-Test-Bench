@@ -66,14 +66,17 @@ if [[ "$RUNTIME_ID" == "linux-x64" && "$HOST_OS" == "Linux" && "$HOST_ARCH" == "
   SMOKE_CACHE_DIR="$STAGING_DIR/smoke-cache"
   mkdir -p -- "$SMOKE_CACHE_DIR"
   DOTNET_BUNDLE_EXTRACT_BASE_DIR="$SMOKE_CACHE_DIR" "$PUBLISH_DIR/MDB-Test-Bench" --smoke-test
+  DOTNET_BUNDLE_EXTRACT_BASE_DIR="$SMOKE_CACHE_DIR" "$PUBLISH_DIR/MDB-Test-Bench" --discovery-smoke-test --capture-output="$STAGING_DIR/sample-simulator.mdbcap.json"
 elif [[ "$RUNTIME_ID" == "osx-arm64" && "$HOST_OS" == "Darwin" && "$HOST_ARCH" == "arm64" ]]; then
   SMOKE_CACHE_DIR="$STAGING_DIR/smoke-cache"
   mkdir -p -- "$SMOKE_CACHE_DIR"
   DOTNET_BUNDLE_EXTRACT_BASE_DIR="$SMOKE_CACHE_DIR" "$STAGING_DIR/MDB Test Bench.app/Contents/MacOS/MDB-Test-Bench" --smoke-test
+  DOTNET_BUNDLE_EXTRACT_BASE_DIR="$SMOKE_CACHE_DIR" "$STAGING_DIR/MDB Test Bench.app/Contents/MacOS/MDB-Test-Bench" --discovery-smoke-test --capture-output="$STAGING_DIR/sample-simulator.mdbcap.json"
 elif [[ "$RUNTIME_ID" == "osx-x64" && "$HOST_OS" == "Darwin" && "$HOST_ARCH" == "x86_64" ]]; then
   SMOKE_CACHE_DIR="$STAGING_DIR/smoke-cache"
   mkdir -p -- "$SMOKE_CACHE_DIR"
   DOTNET_BUNDLE_EXTRACT_BASE_DIR="$SMOKE_CACHE_DIR" "$STAGING_DIR/MDB Test Bench.app/Contents/MacOS/MDB-Test-Bench" --smoke-test
+  DOTNET_BUNDLE_EXTRACT_BASE_DIR="$SMOKE_CACHE_DIR" "$STAGING_DIR/MDB Test Bench.app/Contents/MacOS/MDB-Test-Bench" --discovery-smoke-test --capture-output="$STAGING_DIR/sample-simulator.mdbcap.json"
 else
   echo "Smoke test skipped: $RUNTIME_ID is not native to $HOST_OS/$HOST_ARCH."
 fi

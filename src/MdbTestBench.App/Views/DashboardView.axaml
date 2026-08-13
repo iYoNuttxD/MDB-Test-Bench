@@ -6,68 +6,68 @@
   <ScrollViewer Padding="28">
     <StackPanel Spacing="16">
       <Border IsVisible="{Binding ShowSimulationBanner}" Background="#493B13" CornerRadius="8" Padding="14">
-        <TextBlock Text="SIMULATION — responses come from SimulatedCashlessTransport, not physical hardware."
+        <TextBlock Text="{DynamicResource SimulationDashboardHelp}"
                    Foreground="#FFD166" FontWeight="Bold" />
       </Border>
       <WrapPanel ItemWidth="275" ItemHeight="190">
         <Border Classes="card" Margin="0,0,14,14">
           <StackPanel Spacing="8">
-            <TextBlock Classes="label" Text="CONNECTION" />
+            <TextBlock Classes="label" Text="{DynamicResource Connection}" />
             <TextBlock Classes="value" Text="{Binding ConnectionStatus}" Foreground="{Binding ConnectionColor}" />
-            <TextBlock Text="{Binding PortDisplay, StringFormat='Port  ·  {0}'}" />
-            <TextBlock Text="{Binding TransportDisplay, StringFormat='Transport  ·  {0}'}" />
-            <TextBlock Text="{Binding PollingDisplay, StringFormat='Polling  ·  {0}'}" />
+            <TextBlock><Run Text="{DynamicResource PortLabel}"/><Run Text="  ·  "/><Run Text="{Binding PortDisplay}"/></TextBlock>
+            <TextBlock><Run Text="{DynamicResource TransportLabel}"/><Run Text="  ·  "/><Run Text="{Binding TransportDisplay}"/></TextBlock>
+            <TextBlock><Run Text="{DynamicResource PollingLabel}"/><Run Text="  ·  "/><Run Text="{Binding PollingDisplay}"/></TextBlock>
           </StackPanel>
         </Border>
         <Border Classes="card" Margin="0,0,14,14">
           <StackPanel Spacing="8">
-            <TextBlock Classes="label" Text="DEVICE UNDER TEST" />
-            <TextBlock Classes="value" Text="Cashless device 1" />
-            <TextBlock Text="MDB address  ·  0x10" />
-            <TextBlock Text="{Binding DetectedFeatureLevel, StringFormat='Detected level  ·  {0}'}" />
-            <TextBlock Text="{Binding CurrentState, StringFormat='Current state  ·  {0}'}" />
+            <TextBlock Classes="label" Text="{DynamicResource DeviceUnderTest}" />
+            <TextBlock Classes="value" Text="{DynamicResource CashlessDevice1}" />
+            <TextBlock><Run Text="{DynamicResource MdbAddressLabel}"/><Run Text="  ·  0x10"/></TextBlock>
+            <TextBlock><Run Text="{DynamicResource DetectedLevelLabel}"/><Run Text="  ·  "/><Run Text="{Binding DetectedFeatureLevel}"/></TextBlock>
+            <TextBlock><Run Text="{DynamicResource CurrentStateLabel}"/><Run Text="  ·  "/><Run Text="{Binding CurrentState}"/></TextBlock>
           </StackPanel>
         </Border>
         <Border Classes="card" Margin="0,0,14,14">
           <StackPanel Spacing="8">
-            <TextBlock Classes="label" Text="ACTIVE PROFILE" />
+            <TextBlock Classes="label" Text="{DynamicResource ActiveProfile}" />
             <TextBlock Classes="value" Text="{Binding ActiveProfileName}" />
             <TextBlock Text="{Binding ActiveFeatureLevel}" Foreground="#75B8FF" />
-            <TextBlock Text="Capabilities are declared independently." TextWrapping="Wrap" Foreground="#93A1B5" />
+            <TextBlock Text="{DynamicResource CapabilitiesIndependent}" TextWrapping="Wrap" Foreground="#93A1B5" />
           </StackPanel>
         </Border>
         <Border Classes="card" Margin="0,0,14,14">
           <StackPanel Spacing="8">
-            <TextBlock Classes="label" Text="SESSION" />
+            <TextBlock Classes="label" Text="{DynamicResource Session}" />
             <TextBlock Classes="value" Text="{Binding CurrentState}" />
-            <TextBlock Text="{Binding Manual.LastCommand, StringFormat='Last command  ·  {0}'}" />
-            <TextBlock Text="{Binding Manual.LastResponse, StringFormat='Last response  ·  {0}'}" />
-            <TextBlock Text="{Binding LastError, StringFormat='Errors  ·  {0}'}" TextWrapping="Wrap" Foreground="#F08A91" />
+            <TextBlock><Run Text="{DynamicResource LastCommandLabel}"/><Run Text="  ·  "/><Run Text="{Binding Manual.LastCommand}"/></TextBlock>
+            <TextBlock><Run Text="{DynamicResource LastResponseLabel}"/><Run Text="  ·  "/><Run Text="{Binding Manual.LastResponse}"/></TextBlock>
+            <TextBlock TextWrapping="Wrap" Foreground="#F08A91"><Run Text="{DynamicResource ErrorsLabel}"/><Run Text="  ·  "/><Run Text="{Binding LastError}"/></TextBlock>
           </StackPanel>
         </Border>
       </WrapPanel>
       <Border Classes="card">
         <StackPanel Spacing="9">
-          <TextBlock Classes="label" Text="PROTOCOL SUPPORT · MDB CASHLESS" />
+          <TextBlock Classes="label" Text="{DynamicResource ProtocolSupport}" />
           <ItemsControl ItemsSource="{Binding ProtocolSupport}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:ProtocolSupportViewModel">
                 <Grid ColumnDefinitions="90,*,*,*,1.4*" Margin="0,4">
                   <TextBlock Text="{Binding FeatureLevel}" FontWeight="Bold" />
-                  <TextBlock Grid.Column="1" Text="{Binding Encoder, StringFormat='Encoder: {0}'}" />
-                  <TextBlock Grid.Column="2" Text="{Binding Decoder, StringFormat='Decoder: {0}'}" />
-                  <TextBlock Grid.Column="3" Text="{Binding Simulator, StringFormat='Simulator: {0}'}" />
-                  <TextBlock Grid.Column="4" Text="{Binding Hardware, StringFormat='Hardware: {0}'}" Foreground="#FFD166" />
+                  <TextBlock Grid.Column="1"><Run Text="{DynamicResource EncoderLabel}"/><Run Text=": "/><Run Text="{Binding Encoder}"/></TextBlock>
+                  <TextBlock Grid.Column="2"><Run Text="{DynamicResource DecoderLabel}"/><Run Text=": "/><Run Text="{Binding Decoder}"/></TextBlock>
+                  <TextBlock Grid.Column="3"><Run Text="{DynamicResource SimulatorLabel}"/><Run Text=": "/><Run Text="{Binding Simulator}"/></TextBlock>
+                  <TextBlock Grid.Column="4" Foreground="#FFD166"><Run Text="{DynamicResource HardwareLabel}"/><Run Text=": "/><Run Text="{Binding Hardware}"/></TextBlock>
                 </Grid>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Text="Feature Level does not enable every capability. Hardware status refers only to the unvalidated Wafer adapter layer." Foreground="#93A1B5" TextWrapping="Wrap" />
+          <TextBlock Text="{DynamicResource ProtocolSupportHelp}" Foreground="#93A1B5" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
       <Border Classes="card">
         <Grid RowDefinitions="Auto,*">
-          <TextBlock Classes="label" Text="LIVE TRAFFIC · LAST 8 EVENTS" />
+          <TextBlock Classes="label" Text="{DynamicResource LiveTraffic}" />
           <ItemsControl Grid.Row="1" ItemsSource="{Binding Logs.LiveTraffic}" Margin="0,10,0,0">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:LogEntryViewModel">

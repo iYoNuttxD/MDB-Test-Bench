@@ -9,6 +9,7 @@ public enum TransportKind { Simulated, WaferMdbRs232 }
 
 public sealed record AppSettings
 {
+    public string? Language { get; init; }
     public TransportKind SelectedTransport { get; init; } = TransportKind.Simulated;
     public SimulatorBehavior SimulatorBehavior { get; init; } = SimulatorBehavior.Normal;
     public string SerialPort { get; init; } = string.Empty;

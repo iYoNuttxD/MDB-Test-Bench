@@ -40,6 +40,9 @@ if ($RuntimeIdentifier -eq 'win-x64') {
     $executable = Join-Path $publishDirectory 'MDB-Test-Bench.exe'
     $process = Start-Process $executable -ArgumentList '--smoke-test' -Wait -PassThru
     if ($process.ExitCode -ne 0) { throw 'Published Windows smoke test failed.' }
+    $capturePath = Join-Path $stagingDirectory 'sample-simulator.mdbcap.json'
+    $process = Start-Process $executable -ArgumentList '--discovery-smoke-test', "--capture-output=$capturePath" -Wait -PassThru
+    if ($process.ExitCode -ne 0) { throw 'Published Windows discovery smoke test failed.' }
     $package = Join-Path $packagesDirectory "MDB-Test-Bench-v$Version-windows-x64.zip"
     if (Test-Path $package) { Remove-Item $package -Force }
     Compress-Archive -Path (Join-Path $publishDirectory '*') -DestinationPath $package

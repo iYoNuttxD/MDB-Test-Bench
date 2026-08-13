@@ -22,5 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Localization/*.json" />
   </ItemGroup>
 </Project>

@@ -4,22 +4,22 @@
   <Grid Margin="28" RowDefinitions="Auto,*,Auto" RowSpacing="12">
     <Border Classes="card">
       <WrapPanel VerticalAlignment="Center">
-        <CheckBox Content="TX" IsChecked="{Binding Logs.ShowTx}" Margin="0,0,14,0" />
-        <CheckBox Content="RX" IsChecked="{Binding Logs.ShowRx}" Margin="0,0,14,0" />
-        <CheckBox Content="Errors" IsChecked="{Binding Logs.ShowErrors}" Margin="0,0,14,0" />
-        <ToggleSwitch Content="Pause view" IsChecked="{Binding Logs.Paused}" Margin="0,0,14,0" />
-        <CheckBox Content="Auto-scroll" IsChecked="{Binding Logs.AutoScroll}" Margin="0,0,14,0" />
-        <TextBox Text="{Binding Logs.Search}" PlaceholderText="Search application/MDB logs" Width="220" Margin="0,0,10,0" />
-        <Button Content="Clear" Command="{Binding Logs.ClearCommand}" Margin="0,0,8,0" />
-        <Button Content="Export application/MDB logs" Command="{Binding Logs.ExportCommand}" />
+        <CheckBox Content="{DynamicResource Tx}" IsChecked="{Binding Logs.ShowTx}" Margin="0,0,14,0" />
+        <CheckBox Content="{DynamicResource Rx}" IsChecked="{Binding Logs.ShowRx}" Margin="0,0,14,0" />
+        <CheckBox Content="{DynamicResource Errors}" IsChecked="{Binding Logs.ShowErrors}" Margin="0,0,14,0" />
+        <ToggleSwitch Content="{DynamicResource PauseView}" IsChecked="{Binding Logs.Paused}" Margin="0,0,14,0" />
+        <CheckBox Content="{DynamicResource AutoScroll}" IsChecked="{Binding Logs.AutoScroll}" Margin="0,0,14,0" />
+        <TextBox Text="{Binding Logs.Search}" PlaceholderText="{DynamicResource SearchLogs}" Width="220" Margin="0,0,10,0" />
+        <Button Content="{DynamicResource Clear}" Command="{Binding Logs.ClearCommand}" Margin="0,0,8,0" />
+        <Button Content="{DynamicResource ExportLogs}" Command="{Binding Logs.ExportCommand}" />
       </WrapPanel>
     </Border>
     <Border Grid.Row="1" Classes="card" Padding="10">
       <Grid RowDefinitions="Auto,*">
         <Grid ColumnDefinitions="108,40,170,*,150,80" Margin="8,4,8,8">
-          <TextBlock Classes="label" Text="TIMESTAMP" /><TextBlock Grid.Column="1" Classes="label" Text="DIR" />
-          <TextBlock Grid.Column="2" Classes="label" Text="COMMAND" /><TextBlock Grid.Column="3" Classes="label" Text="DESCRIPTION" />
-          <TextBlock Grid.Column="4" Classes="label" Text="RAW" /><TextBlock Grid.Column="5" Classes="label" Text="STATUS" />
+          <TextBlock Classes="label" Text="{DynamicResource Timestamp}" /><TextBlock Grid.Column="1" Classes="label" Text="{DynamicResource Direction}" />
+          <TextBlock Grid.Column="2" Classes="label" Text="{DynamicResource Command}" /><TextBlock Grid.Column="3" Classes="label" Text="{DynamicResource Description}" />
+          <TextBlock Grid.Column="4" Classes="label" Text="{DynamicResource Raw}" /><TextBlock Grid.Column="5" Classes="label" Text="{DynamicResource Status}" />
         </Grid>
         <ListBox x:Name="LogsList" Grid.Row="1" ItemsSource="{Binding Logs.Visible}" SelectedItem="{Binding Logs.Selected}">
           <ListBox.ItemTemplate>
@@ -38,8 +38,8 @@
       </Grid>
     </Border>
     <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
-      <Button Content="Copy line" Command="{Binding Logs.CopyLineCommand}" />
-      <Button Grid.Column="1" Content="Copy MDB/log raw HEX" Command="{Binding Logs.CopyRawHexCommand}" />
+      <Button Content="{DynamicResource CopyLine}" Command="{Binding Logs.CopyLineCommand}" />
+      <Button Grid.Column="1" Content="{DynamicResource CopyRawHex}" Command="{Binding Logs.CopyRawHexCommand}" />
       <TextBlock Grid.Column="2" Text="{Binding Logs.Message}" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#93A1B5" />
     </Grid>
   </Grid>

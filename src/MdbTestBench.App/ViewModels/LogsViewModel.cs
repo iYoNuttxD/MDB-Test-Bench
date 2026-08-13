@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using MdbTestBench.App.Services;
 using MdbTestBench.Core.Logging;
 using MdbTestBench.Core.Protocol;
+using MdbTestBench.App.Localization;
 
 namespace MdbTestBench.App.ViewModels;
 
@@ -12,6 +13,7 @@ public sealed class LogsViewModel : ViewModelBase, IDisposable
     private readonly InMemoryMdbLogSink _logs;
     private readonly LogExportService _export;
     private readonly ClipboardService _clipboard = new();
+    private readonly ILocalizationService _localization;
     private bool _paused;
     private bool _autoScroll = true;
     private bool _showTx = true;
@@ -19,11 +21,12 @@ public sealed class LogsViewModel : ViewModelBase, IDisposable
     private bool _showErrors = true;
     private string _search = string.Empty;
     private LogEntryViewModel? _selected;
-    private string _message = "Application and MDB traffic logging ready. Raw adapter evidence is stored separately in Capture.";
+    private string _message;
 
-    public LogsViewModel(InMemoryMdbLogSink logs, LogExportService export)
+    public LogsViewModel(InMemoryMdbLogSink logs, LogExportService export, ILocalizationService? localization = null)
     {
-        _logs = logs; _export = export;
+        _logs = logs; _export = export; _localization = localization ?? new LocalizationService();
+        _message = _localization.Get("LogsReady");
         ClearCommand = new RelayCommand(_ => Clear());
         ExportCommand = new AsyncRelayCommand(_ => ExportAsync());
         CopyLineCommand = new AsyncRelayCommand(_ => CopyLineAsync());
@@ -48,7 +51,7 @@ public sealed class LogsViewModel : ViewModelBase, IDisposable
 
     private void OnLogAdded(object? sender, MdbLogEntry entry) => Dispatcher.UIThread.Post(() =>
     {
-        var model = new LogEntryViewModel(entry);
+        var model = new LogEntryViewModel(entry, _localization);
         if (!Paused && Matches(model)) Visible.Add(model);
         LiveTraffic.Insert(0, model);
         while (LiveTraffic.Count > 8) LiveTraffic.RemoveAt(LiveTraffic.Count - 1);
@@ -58,7 +61,7 @@ public sealed class LogsViewModel : ViewModelBase, IDisposable
     {
         if (Paused) return;
         Visible.Clear();
-        foreach (var entry in _logs.Snapshot().Select(item => new LogEntryViewModel(item)).Where(Matches)) Visible.Add(entry);
+        foreach (var entry in _logs.Snapshot().Select(item => new LogEntryViewModel(item, _localization)).Where(Matches)) Visible.Add(entry);
     }
 
     private bool Matches(LogEntryViewModel entry)
@@ -71,25 +74,32 @@ public sealed class LogsViewModel : ViewModelBase, IDisposable
     private void Clear()
     {
         _logs.Clear(); Visible.Clear(); LiveTraffic.Clear();
-        Message = "Application/MDB log cleared. Raw Adapter Capture files are unaffected.";
+        Message = _localization.Get("LogsCleared");
     }
 
     private async Task ExportAsync()
     {
-        try { await _export.ExportSessionAsync(_logs.Snapshot()); Message = "Application/MDB TXT and JSON logs exported."; }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { Message = exception.Message; }
+        try { await _export.ExportSessionAsync(_logs.Snapshot()); Message = _localization.Get("LogsExported"); }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { Message = _localization.Get("ErrorFileOperation"); }
     }
 
     private async Task CopyLineAsync()
     {
-        if (Selected is null) { Message = "Select a log row first."; return; }
-        await _clipboard.SetTextAsync(Selected.Line); Message = "Log line copied.";
+        if (Selected is null) { Message = _localization.Get("SelectLogRow"); return; }
+        await _clipboard.SetTextAsync(Selected.Line); Message = _localization.Get("LogLineCopied");
     }
 
     private async Task CopyRawHexAsync()
     {
-        if (Selected is null) { Message = "Select a log row first."; return; }
-        await _clipboard.SetTextAsync(Selected.RawHex); Message = "MDB/log raw HEX copied.";
+        if (Selected is null) { Message = _localization.Get("SelectLogRow"); return; }
+        await _clipboard.SetTextAsync(Selected.RawHex); Message = _localization.Get("LogRawCopied");
+    }
+
+    public void RefreshLocalization()
+    {
+        Message = _localization.Get("LogsReady"); ApplyFilters();
+        LiveTraffic.Clear();
+        foreach (var item in _logs.Snapshot().TakeLast(8).Reverse().Select(entry => new LogEntryViewModel(entry, _localization))) LiveTraffic.Add(item);
     }
 
     public void Dispose()

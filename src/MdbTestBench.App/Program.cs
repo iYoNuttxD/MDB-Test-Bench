@@ -9,6 +9,8 @@ using MdbTestBench.Transport.Capture;
 using MdbTestBench.Transport.Serial;
 using MdbTestBench.Transport.Abstractions;
 using System.Diagnostics;
+using System.Globalization;
+using MdbTestBench.App.Localization;
 
 namespace MdbTestBench.App;
 
@@ -25,12 +27,14 @@ internal static class Program
         var paths = new AppPaths();
         paths.EnsureDirectories();
         var settings = new JsonSettingsStore().LoadAsync(paths.Settings).GetAwaiter().GetResult();
-        BuildAvaloniaApp(settings, paths).StartWithClassicDesktopLifetime(args);
+        var localization = new LocalizationService();
+        localization.SetCulture(localization.ResolveCulture(settings.Language, CultureInfo.CurrentUICulture).Name);
+        BuildAvaloniaApp(settings, paths, localization).StartWithClassicDesktopLifetime(args);
         return 0;
     }
 
-    public static AppBuilder BuildAvaloniaApp(AppSettings settings, AppPaths paths) =>
-        AppBuilder.Configure(() => new App(settings, paths))
+    public static AppBuilder BuildAvaloniaApp(AppSettings settings, AppPaths paths, ILocalizationService localization) =>
+        AppBuilder.Configure(() => new App(settings, paths, localization))
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();

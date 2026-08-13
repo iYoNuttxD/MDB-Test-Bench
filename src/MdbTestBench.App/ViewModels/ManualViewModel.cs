@@ -6,6 +6,7 @@ using MdbTestBench.Core.Protocol;
 using MdbTestBench.Core.Protocol.Cashless;
 using MdbTestBench.Core.Protocol.Commands;
 using MdbTestBench.Core.Protocol.Encoding;
+using MdbTestBench.App.Localization;
 
 namespace MdbTestBench.App.ViewModels;
 
@@ -16,24 +17,29 @@ public sealed class ManualViewModel : ViewModelBase
     private readonly Func<bool> _isHardware;
     private readonly Func<MdbFeatureLevel> _profileLevel;
     private readonly Action _sessionChanged;
+    private readonly ILocalizationService _localization;
+    private string _inputCultureName;
     private ManualCommandKind _selectedCommand;
     private MdbCashlessDevice _selectedDevice = MdbCashlessDevice.CashlessDevice1;
-    private string _price = "5.00";
+    private string _price;
     private string _product = "1";
     private string _value = string.Empty;
     private string _preview = string.Empty;
-    private string _message = "Ready";
+    private string _message;
     private string _rawHex = string.Empty;
-    private string _rawValidation = "Enter bytes to validate.";
+    private string _rawValidation;
     private bool _rawConfirmed;
     private string _lastCommand = "—";
     private string _lastResponse = "—";
 
     public ManualViewModel(WorkbenchSession session, Func<bool> isConnected, Func<bool> isHardware,
-        Func<MdbFeatureLevel> profileLevel, Action sessionChanged)
+        Func<MdbFeatureLevel> profileLevel, Action sessionChanged, ILocalizationService? localization = null)
     {
         _session = session; _isConnected = isConnected; _isHardware = isHardware;
-        _profileLevel = profileLevel; _sessionChanged = sessionChanged;
+        _profileLevel = profileLevel; _sessionChanged = sessionChanged; _localization = localization ?? new LocalizationService();
+        _inputCultureName = _localization.CurrentCulture.Name;
+        _price = 5m.ToString("0.00", _localization.CurrentCulture);
+        _message = _localization.Get("Ready"); _rawValidation = _localization.Get("EnterBytesToValidate");
         SendStructuredCommand = new AsyncRelayCommand(_ => SendStructuredAsync());
         SendRawCommand = new AsyncRelayCommand(_ => SendRawAsync());
         Refresh();
@@ -57,16 +63,16 @@ public sealed class ManualViewModel : ViewModelBase
     public string LastResponse { get => _lastResponse; private set => SetProperty(ref _lastResponse, value); }
     public bool CanUseStructured => _isConnected() && !_isHardware();
     public bool CanUseRaw => _isConnected() && !_isHardware();
-    public string CurrentState => _session.State;
+    public string CurrentState => _localization.Get("State" + _session.State.Replace(" / codec unverified", "CodecUnverified", StringComparison.Ordinal));
 
     public void Refresh()
     {
         try
         {
             var command = Build();
-            Preview = $"{command.Frame.Command} {command.Frame.Subcommand}\n{command.LogicalPayload}\n\nMDB: {MdbLogFormatter.FormatHex(command.MdbBytes.Span)}";
+            Preview = $"{command.Frame.Command} {command.Frame.Subcommand}\n{LocalizePayload(command)}\n\nMDB: {MdbLogFormatter.FormatHex(command.MdbBytes.Span)}";
         }
-        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException) { Preview = exception.Message; }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException) { Preview = _localization.Get("InvalidCommandValues"); }
         RaisePropertyChanged(nameof(CanUseStructured)); RaisePropertyChanged(nameof(CanUseRaw)); RaisePropertyChanged(nameof(CurrentState));
     }
 
@@ -74,13 +80,13 @@ public sealed class ManualViewModel : ViewModelBase
     {
         try
         {
-            if (!_isConnected()) throw new InvalidOperationException("Connect the Simulator before sending a command.");
-            if (_isHardware()) throw new InvalidOperationException("Wafer codec not validated. Use Adapter Discovery for hardware analysis.");
+            if (!_isConnected()) throw new InvalidOperationException(_localization.Get("ConnectSimulatorFirst"));
+            if (_isHardware()) throw new InvalidOperationException(_localization.Get("WaferCodecNotValidated"));
             var command = Build();
-            if (!_session.CanSend(command.Frame)) throw new InvalidOperationException($"{command.Trigger} is blocked while the VMC is in {_session.State}.");
+            if (!_session.CanSend(command.Frame)) throw new InvalidOperationException(_localization.Format("CommandBlocked", command.Trigger, CurrentState));
             LastCommand = command.Frame.Subcommand == MdbSubcommandType.None ? command.Frame.Command.ToString() : $"{command.Frame.Command} {command.Frame.Subcommand}";
             var response = await _session.ExchangeAsync(command.Frame);
-            LastResponse = response.Response?.ToString() ?? "Unknown"; Message = $"Received {LastResponse}.";
+            LastResponse = response.Response?.ToString() ?? _localization.Get("Unknown"); Message = _localization.Format("ReceivedResponse", LastResponse);
         }
         catch (Exception exception) when (exception is InvalidDataException or InvalidOperationException or TimeoutException) { Message = exception.Message; }
         finally { Refresh(); _sessionChanged(); }
@@ -90,25 +96,48 @@ public sealed class ManualViewModel : ViewModelBase
     {
         try
         {
-            if (_isHardware()) throw new InvalidOperationException("Hardware Raw Adapter is available only in Wafer Discovery so TX is always captured.");
-            if (!RawConfirmed) throw new InvalidOperationException("Confirm the simulator raw payload before sending.");
+            if (_isHardware()) throw new InvalidOperationException(_localization.Get("RawHardwareDiscoveryOnly"));
+            if (!RawConfirmed) throw new InvalidOperationException(_localization.Get("ConfirmSimulatorRawError"));
             var parsed = HexParser.Parse(RawHex);
             if (!parsed.IsValid) throw new InvalidDataException(parsed.Error);
             var result = await _session.ExchangeRawAsync(parsed.Bytes);
-            Message = $"Simulator raw response: {MdbLogFormatter.FormatHex(result.ResponseBytes.Span)}"; RawConfirmed = false;
+            Message = _localization.Format("SimulatorRawResponse", MdbLogFormatter.FormatHex(result.ResponseBytes.Span)); RawConfirmed = false;
         }
         catch (Exception exception) when (exception is InvalidDataException or InvalidOperationException or TimeoutException) { Message = exception.Message; }
     }
 
     private ManualCommandBuildResult Build() => ManualCommandBuilder.Build(new ManualCommandInput(SelectedCommand,
-        Parse(Price), int.TryParse(Product, NumberStyles.Integer, CultureInfo.InvariantCulture, out var product) ? product : null,
+        Parse(Price), int.TryParse(Product, NumberStyles.Integer, _localization.CurrentCulture, out var product) ? product : null,
         Parse(Value), SelectedDevice, _profileLevel() is MdbFeatureLevel.Level2 or MdbFeatureLevel.Level3 ? _profileLevel() : MdbFeatureLevel.Level1));
 
-    private static decimal? Parse(string value) => decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var result) ? result : null;
+    private decimal? Parse(string value) => decimal.TryParse(value, NumberStyles.Number, _localization.CurrentCulture, out var result) ? result : null;
     private void ValidateRaw()
     {
         var result = HexParser.Parse(RawHex);
-        RawValidation = result.IsValid ? $"Valid · {result.Bytes.Length} byte(s) · {result.NormalizedHex}" : result.Error ?? "Invalid";
+        RawValidation = result.IsValid ? _localization.Format("ValidBytes", result.Bytes.Length, result.NormalizedHex) : _localization.Get("InvalidHex");
         if (!result.IsValid) RawConfirmed = false;
+    }
+
+    private string LocalizePayload(ManualCommandBuildResult command) => command.SemanticCommand switch
+    {
+        MdbVendRequestCommand vend => _localization.Format("VendLogicalPayload", Parse(Price), vend.ItemPrice, vend.ItemNumber),
+        MdbCashSaleCommand sale => _localization.Format("VendLogicalPayload", Parse(Price), sale.ItemPrice, sale.ItemNumber),
+        MdbSetupMaxMinPricesCommand prices => _localization.Format("PriceRangeLogicalPayload",
+            string.IsNullOrWhiteSpace(Price) ? _localization.Get("Unknown") : Price,
+            string.IsNullOrWhiteSpace(Value) ? _localization.Get("Unknown") : Value,
+            prices.MaximumPrice, prices.MinimumPrice),
+        MdbRevalueRequestCommand revalue => _localization.Format("RevalueLogicalPayload", Parse(Value), revalue.Amount),
+        _ => _localization.Get("NoLogicalFields")
+    };
+
+    public void RefreshLocalization()
+    {
+        var previousCulture = CultureInfo.GetCultureInfo(_inputCultureName);
+        var price = decimal.TryParse(Price, NumberStyles.Number, previousCulture, out var parsedPrice) ? parsedPrice : (decimal?)null;
+        var value = decimal.TryParse(Value, NumberStyles.Number, previousCulture, out var parsedValue) ? parsedValue : (decimal?)null;
+        _inputCultureName = _localization.CurrentCulture.Name;
+        if (price is not null) Price = price.Value.ToString("0.00", _localization.CurrentCulture);
+        if (value is not null) Value = value.Value.ToString("0.00", _localization.CurrentCulture);
+        Message = _localization.Get("Ready"); ValidateRaw(); Refresh();
     }
 }

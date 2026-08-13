@@ -11,10 +11,13 @@ public sealed class WaferDiscoveryCaptureController : IAsyncDisposable
     private readonly CancellationTokenSource _readCancellation = new();
     private readonly SemaphoreSlim _stopGate = new(1, 1);
     private readonly SemaphoreSlim _writeGate = new(1, 1);
+    private readonly SemaphoreSlim _disposeGate = new(1, 1);
     private Task? _readTask;
     private bool _started;
     private bool _stopped;
     private bool _finalized;
+    private bool _disconnectAttempted;
+    private bool _disposed;
     private WaferCaptureArtifact? _artifact;
 
     public WaferDiscoveryCaptureController(IRawByteTransport transport, WaferCaptureRecorder recorder)
@@ -81,8 +84,10 @@ public sealed class WaferDiscoveryCaptureController : IAsyncDisposable
         await _stopGate.WaitAsync(cancellationToken);
         try
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (!_started) throw new InvalidOperationException("Capture has not started.");
             if (_finalized) return _artifact!;
+            cancellationToken.ThrowIfCancellationRequested();
             _stopped = true;
             _readCancellation.Cancel();
             if (_readTask is not null)
@@ -90,16 +95,20 @@ public sealed class WaferDiscoveryCaptureController : IAsyncDisposable
                 try { await _readTask; }
                 catch (OperationCanceledException) { }
             }
-            await _writeGate.WaitAsync(cancellationToken);
+            await _writeGate.WaitAsync(CancellationToken.None);
             try
             {
-                try { await _transport.DisconnectAsync(cancellationToken); }
-                catch (Exception exception) { await TryRecordErrorAsync(Classify(exception), SafeMessage(exception), CancellationToken.None); }
+                if (!_disconnectAttempted)
+                {
+                    _disconnectAttempted = true;
+                    try { await _transport.DisconnectAsync(CancellationToken.None); }
+                    catch (Exception exception) { await TryRecordErrorAsync(Classify(exception), SafeMessage(exception), CancellationToken.None); }
+                }
             }
             finally { _writeGate.Release(); }
-            try { await _recorder.RecordTransportStateAsync("SerialClosed", cancellationToken); }
+            try { await _recorder.RecordTransportStateAsync("SerialClosed", CancellationToken.None); }
             catch (InvalidOperationException) when (_recorder.SizeLimitReached) { }
-            _artifact = await _recorder.StopAsync(cancellationToken);
+            _artifact = await _recorder.StopAsync(CancellationToken.None);
             _finalized = true;
             return _artifact;
         }
@@ -159,16 +168,21 @@ public sealed class WaferDiscoveryCaptureController : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_started && !_finalized)
+        await _disposeGate.WaitAsync();
+        try
         {
-            try { await StopAsync(); }
-            catch (Exception) { }
+            if (_disposed) return;
+            if (_started && !_finalized)
+            {
+                try { await StopAsync(); }
+                catch (Exception) { }
+            }
+            _readCancellation.Dispose();
+            await _transport.DisposeAsync();
+            await _recorder.DisposeAsync();
+            _disposed = true;
         }
-        _readCancellation.Dispose();
-        await _transport.DisposeAsync();
-        await _recorder.DisposeAsync();
-        _writeGate.Dispose();
-        _stopGate.Dispose();
+        finally { _disposeGate.Release(); }
         GC.SuppressFinalize(this);
     }
 }

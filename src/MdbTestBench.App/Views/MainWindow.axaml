@@ -4,7 +4,7 @@
         xmlns:views="using:MdbTestBench.App.Views"
         x:Class="MdbTestBench.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="MDB Test Bench"
+        Title="{DynamicResource AppTitle}"
         Width="{Binding WindowWidth, Mode=TwoWay}"
         Height="{Binding WindowHeight, Mode=TwoWay}"
         MinWidth="920"
@@ -13,8 +13,8 @@
     <Border Background="#151E2C" Padding="18">
       <Grid RowDefinitions="Auto,28,*,Auto">
         <StackPanel>
-          <TextBlock Text="MDB TEST BENCH" FontSize="19" FontWeight="Bold" />
-          <TextBlock Text="VMC / cashless validation · v0.1.1" Opacity="0.58" FontSize="11" />
+          <TextBlock Text="{DynamicResource AppTitle}" FontSize="19" FontWeight="Bold" />
+          <TextBlock Text="{DynamicResource AppSubtitle}" Opacity="0.58" FontSize="11" />
         </StackPanel>
         <ItemsControl Grid.Row="2" ItemsSource="{Binding Pages}">
           <ItemsControl.ItemTemplate>
@@ -29,7 +29,7 @@
         </ItemsControl>
         <StackPanel Grid.Row="3" Spacing="4">
           <Border IsVisible="{Binding ShowSimulationBanner}" Background="#493B13" CornerRadius="5" Padding="8,5">
-            <TextBlock Text="SIMULATION" Foreground="#FFD166" FontWeight="Bold" HorizontalAlignment="Center" />
+            <TextBlock Text="{DynamicResource Simulation}" Foreground="#FFD166" FontWeight="Bold" HorizontalAlignment="Center" />
           </Border>
           <TextBlock Text="{Binding ConnectionStatus}" TextWrapping="Wrap" FontSize="11" Opacity="0.75" />
         </StackPanel>

@@ -14,6 +14,7 @@ public sealed class JsonSettingsStoreTests
             var store = new JsonSettingsStore();
             var expected = new AppSettings
             {
+                Language = "pt-BR",
                 SelectedTransport = TransportKind.WaferMdbRs232,
                 SerialPort = "test-port",
                 PollingMode = PollingMode.AdapterManaged
@@ -28,6 +29,21 @@ public sealed class JsonSettingsStoreTests
         {
             if (File.Exists(path)) File.Delete(path);
         }
+    }
+
+    [Theory]
+    [InlineData("fr-FR")]
+    [InlineData("pt-INVALID")]
+    public async Task UnsupportedLanguagePreferenceFallsBackToSystemDetection(string language)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"mdb-settings-{Guid.NewGuid():N}.json");
+        try
+        {
+            await File.WriteAllTextAsync(path, $$"""{"language":"{{language}}"}""");
+            var settings = await new JsonSettingsStore().LoadAsync(path);
+            Assert.Null(settings.Language);
+        }
+        finally { if (File.Exists(path)) File.Delete(path); }
     }
 
     [Fact]

@@ -62,6 +62,7 @@ public sealed class JsonSettingsStore
         if (settings is null) return defaults;
         return settings with
         {
+            Language = settings.Language is "en-US" or "pt-BR" ? settings.Language : null,
             SelectedTransport = Enum.IsDefined(settings.SelectedTransport)
                 ? settings.SelectedTransport : defaults.SelectedTransport,
             SimulatorBehavior = Enum.IsDefined(settings.SimulatorBehavior)

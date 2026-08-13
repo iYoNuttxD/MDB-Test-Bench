@@ -1,5 +1,7 @@
 # MDB Test Bench
 
+[English](README.md) | [Português (Brasil)](README.pt-BR.md)
+
 Cross-platform desktop application for exercising the VMC/master side of a cashless MDB test setup. Version `0.1.1` includes an MDB/ICP 4.3 cashless encoder/decoder, runs end-to-end with a deterministic simulator, and provides a deliberately constrained serial diagnostic path for the reported Wafer MDB-RS232 revision `2022061K5`.
 
 The simulator is a development tool, not a statement of MDB conformance. The binary and ASCII HEX serial wire formats are experimental representations selected by the operator. No unknown Wafer byte, framing, checksum, response boundary, timing rule, or polling behavior is claimed or invented.
@@ -20,6 +22,7 @@ The simulator is a development tool, not a statement of MDB conformance. The bin
 - Level 1, Level 2, Level 3, and custom JSON profiles with independent capability status.
 - Wafer Discovery with exact RX-chunk/TX evidence, monotonic deltas, operator markers, manual probes, bounded streaming capture, conservative protocol observations, and offline import/reanalysis.
 - Privacy-safe, versioned `*.mdbcap.json` export plus a human-readable TXT summary.
+- Runtime-selectable `en-US` / `pt-BR` interface with OS-culture detection and persisted preference.
 
 ## Architecture
 
@@ -117,6 +120,8 @@ The reported adapter is Wafer MDB-RS232 revision `2022061K5`. Its host framing a
 
 ## Downloads / Releases
 
+Download the current self-contained packages from [GitHub Releases](https://github.com/iYoNuttxD/MDB-Test-Bench/releases/latest). End users do not need to install .NET. Verify every download against the accompanying `SHA256SUMS.txt` before running it.
+
 A tag such as `v0.1.1` triggers the release workflow and creates:
 
 ```text
@@ -124,12 +129,15 @@ MDB-Test-Bench-v0.1.1-windows-x64.zip
 MDB-Test-Bench-v0.1.1-macos-arm64.zip
 MDB-Test-Bench-v0.1.1-macos-x64.zip
 MDB-Test-Bench-v0.1.1-linux-x64.tar.gz
+SHA256SUMS.txt
 ```
 
-No tag or GitHub Release is created automatically during development. Local packaging and the complete release procedure are documented in [RELEASING.md](docs/RELEASING.md).
+The tag/release remains a deliberate maintainer operation. Local packaging and the complete release procedure are documented in [RELEASING.md](docs/RELEASING.md).
 
 ## Local data
 
 Settings, custom profiles, captures, temporary capture spools, exports, and logs are stored below the operating system's per-user local application-data directory in `MdbTestBench/`. Captures default to a configurable 100 MB maximum. Invalid or oversized JSON is rejected without closing the application. A saved serial name is selected only when currently discovered.
 
-Further reading: [v0.1.1 status](docs/V0.1.1_STATUS.md), [architecture](docs/ARCHITECTURE.md), [capture format](docs/CAPTURE_FORMAT.md), [Discovery mode](docs/WAFER_DISCOVERY.md), [MDB reference](docs/MDB_REFERENCE.md), [implementation status](docs/MDB_IMPLEMENTATION_STATUS.md), [hardware](docs/HARDWARE.md), [MDB scope](docs/MDB_SCOPE.md), and [Wafer integration](docs/WAFER_INTEGRATION.md).
+User documentation: [English user guide](docs/en-US/USER_GUIDE.md) and [Guia do usuário em português](docs/pt-BR/GUIA_DO_USUARIO.md).
+
+Further reading: [v0.1.1 status](docs/V0.1.1_STATUS.md), [architecture](docs/ARCHITECTURE.md), [localization](docs/LOCALIZATION.md), [capture format](docs/CAPTURE_FORMAT.md), [Discovery mode](docs/WAFER_DISCOVERY.md), [MDB reference](docs/MDB_REFERENCE.md), [implementation status](docs/MDB_IMPLEMENTATION_STATUS.md), [hardware](docs/HARDWARE.md), [MDB scope](docs/MDB_SCOPE.md), and [Wafer integration](docs/WAFER_INTEGRATION.md).

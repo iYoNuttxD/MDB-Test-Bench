@@ -6,25 +6,25 @@
       <Border Classes="card">
         <StackPanel Spacing="10">
           <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="8">
-            <StackPanel><TextBlock Classes="label" Text="ADAPTER MODEL"/><TextBox Text="{Binding Discovery.AdapterModel}"/></StackPanel>
-            <StackPanel Grid.Column="1"><TextBlock Classes="label" Text="PRINTED CODE / REVISION"/><TextBox Text="{Binding Discovery.PrintedRevision}"/></StackPanel>
-            <Button Grid.Column="2" Classes="primary" Content="Start Capture" Command="{Binding Discovery.StartCommand}" VerticalAlignment="Bottom"/>
-            <Button Grid.Column="3" Content="Stop" Command="{Binding Discovery.StopCommand}" VerticalAlignment="Bottom"/>
+            <StackPanel><TextBlock Classes="label" Text="{DynamicResource AdapterModel}"/><TextBox Text="{Binding Discovery.AdapterModel}"/></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Classes="label" Text="{DynamicResource PrintedRevision}"/><TextBox Text="{Binding Discovery.PrintedRevision}"/></StackPanel>
+            <Button Grid.Column="2" Classes="primary" Content="{DynamicResource StartCapture}" Command="{Binding Discovery.StartCommand}" VerticalAlignment="Bottom"/>
+            <Button Grid.Column="3" Content="{DynamicResource Stop}" Command="{Binding Discovery.StopCommand}" VerticalAlignment="Bottom"/>
           </Grid>
-          <TextBox PlaceholderText="Operator notes (unknown values may remain blank)" Text="{Binding Discovery.Notes}"/>
+          <TextBox PlaceholderText="{DynamicResource OperatorNotesPlaceholder}" Text="{Binding Discovery.Notes}"/>
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
             <Border Background="#493B13" CornerRadius="5" Padding="8,4"><TextBlock Text="{Binding Discovery.OperationMode}" Foreground="#FFD166" FontWeight="Bold"/></Border>
             <TextBlock Grid.Column="1" Text="{Binding Discovery.Status}" TextWrapping="Wrap" Foreground="#FFD166" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="2" Text="{Binding Discovery.CaptureSize, StringFormat='Capture size: {0}'}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" VerticalAlignment="Center"><Run Text="{DynamicResource CaptureSizeLabel}"/><Run Text=": "/><Run Text="{Binding Discovery.CaptureSize}"/></TextBlock>
           </Grid>
         </StackPanel>
       </Border>
       <Border Grid.Column="1" Classes="card">
         <StackPanel Spacing="8">
-          <TextBlock Classes="label" Text="OPERATOR MARKER"/>
-          <TextBox Text="{Binding Discovery.MarkerText}" PlaceholderText="e.g. Cashless LED turned on"/>
-          <Button Content="Add Marker" Command="{Binding Discovery.AddMarkerCommand}"/>
-          <TextBlock Text="Markers correlate physical observations with monotonic timing." Opacity="0.65" TextWrapping="Wrap"/>
+          <TextBlock Classes="label" Text="{DynamicResource OperatorMarker}"/>
+          <TextBox Text="{Binding Discovery.MarkerText}" PlaceholderText="{DynamicResource MarkerPlaceholder}"/>
+          <Button Content="{DynamicResource AddMarker}" Command="{Binding Discovery.AddMarkerCommand}"/>
+          <TextBlock Text="{DynamicResource MarkerHelp}" Opacity="0.65" TextWrapping="Wrap"/>
         </StackPanel>
       </Border>
     </Grid>
@@ -33,10 +33,10 @@
       <Border Classes="card">
         <Grid RowDefinitions="Auto,*" RowSpacing="8">
           <Grid ColumnDefinitions="Auto,Auto,Auto,*,180" ColumnSpacing="8">
-            <CheckBox Content="TX" IsChecked="{Binding Discovery.ShowTx}"/>
-            <CheckBox Grid.Column="1" Content="RX" IsChecked="{Binding Discovery.ShowRx}"/>
+            <CheckBox Content="{DynamicResource Tx}" IsChecked="{Binding Discovery.ShowTx}"/>
+            <CheckBox Grid.Column="1" Content="{DynamicResource Rx}" IsChecked="{Binding Discovery.ShowRx}"/>
             <ComboBox Grid.Column="2" ItemsSource="{Binding Discovery.DisplayModes}" SelectedItem="{Binding Discovery.DisplayMode}"/>
-            <TextBox Grid.Column="4" Text="{Binding Discovery.Search}" PlaceholderText="Search capture"/>
+            <TextBox Grid.Column="4" Text="{Binding Discovery.Search}" PlaceholderText="{DynamicResource SearchCapture}"/>
           </Grid>
           <ListBox Grid.Row="1" ItemsSource="{Binding Discovery.Events}">
             <ListBox.ItemTemplate>
@@ -59,22 +59,22 @@
         <StackPanel Spacing="12">
           <Border Classes="card">
             <StackPanel Spacing="8">
-              <TextBlock Text="RAW ADAPTER / WAFER DEBUG" Foreground="#FFD166" FontWeight="Bold"/>
-              <TextBlock Text="Not Raw MDB. Wire format and terminator come from Settings." Opacity="0.7" TextWrapping="Wrap"/>
-              <TextBox Text="{Binding Discovery.RawHex}" PlaceholderText="10 or 31 30" FontFamily="Cascadia Mono, Menlo, Consolas, monospace"/>
+              <TextBlock Text="{DynamicResource RawAdapterDebug}" Foreground="#FFD166" FontWeight="Bold"/>
+              <TextBlock Text="{DynamicResource RawAdapterHelp}" Opacity="0.7" TextWrapping="Wrap"/>
+              <TextBox Text="{Binding Discovery.RawHex}" PlaceholderText="{DynamicResource AdapterHexExample}" FontFamily="Cascadia Mono, Menlo, Consolas, monospace"/>
               <TextBlock Text="{Binding Discovery.RawValidation}" FontSize="11" Foreground="#FFD166" TextWrapping="Wrap"/>
-              <CheckBox Content="I reviewed and confirm these exact adapter bytes" IsChecked="{Binding Discovery.RawConfirmed}"/>
-              <Button Content="Send Raw Adapter" Command="{Binding Discovery.SendRawCommand}"/>
+              <CheckBox Content="{DynamicResource ConfirmAdapterBytes}" IsChecked="{Binding Discovery.RawConfirmed}"/>
+              <Button Content="{DynamicResource SendRawAdapter}" Command="{Binding Discovery.SendRawCommand}"/>
             </StackPanel>
           </Border>
           <Border Classes="card">
             <StackPanel Spacing="8">
-              <TextBlock Classes="label" Text="MANUAL PROBES (NEVER AUTO-RUN)"/>
-              <TextBox Text="{Binding Discovery.ProbeName}" PlaceholderText="Probe name"/>
-              <TextBox Text="{Binding Discovery.ProbeNotes}" PlaceholderText="Evidence/source notes"/>
-              <Button Content="Save current HEX as probe" Command="{Binding Discovery.SaveProbeCommand}"/>
+              <TextBlock Classes="label" Text="{DynamicResource ManualProbes}"/>
+              <TextBox Text="{Binding Discovery.ProbeName}" PlaceholderText="{DynamicResource ProbeName}"/>
+              <TextBox Text="{Binding Discovery.ProbeNotes}" PlaceholderText="{DynamicResource ProbeNotes}"/>
+              <Button Content="{DynamicResource SaveProbe}" Command="{Binding Discovery.SaveProbeCommand}"/>
               <ComboBox ItemsSource="{Binding Discovery.Probes}" SelectedItem="{Binding Discovery.SelectedProbe}" DisplayMemberBinding="{Binding Name}"/>
-              <Button Content="Load selected probe for review" Command="{Binding Discovery.SendProbeCommand}"/>
+              <Button Content="{DynamicResource LoadProbe}" Command="{Binding Discovery.SendProbeCommand}"/>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -84,15 +84,15 @@
     <Border Grid.Row="2" Classes="card">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
         <StackPanel Spacing="6">
-          <TextBlock Classes="label" Text="OFFLINE ANALYSIS / SHARE"/>
+          <TextBlock Classes="label" Text="{DynamicResource OfflineAnalysisShare}"/>
           <TextBlock Text="{Binding Discovery.Analysis}" TextWrapping="Wrap"/>
-          <TextBox Text="{Binding Discovery.CapturePath}" PlaceholderText="Path to open, or generated export path"/>
-          <TextBlock Text="This file contains raw serial communication and timing data. Review before sharing." Foreground="#FFD166"/>
+          <TextBox Text="{Binding Discovery.CapturePath}" PlaceholderText="{DynamicResource CapturePathPlaceholder}"/>
+          <TextBlock Text="{DynamicResource ShareWarning}" Foreground="#FFD166"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-          <Button Classes="primary" Content="Export for Analysis" Command="{Binding Discovery.ExportCommand}"/>
-          <Button Content="Open Capture" Command="{Binding Discovery.OpenCommand}"/>
-          <Button Content="Export TXT Summary" Command="{Binding Discovery.ExportSummaryCommand}"/>
+          <Button Classes="primary" Content="{DynamicResource ExportForAnalysis}" Command="{Binding Discovery.ExportCommand}"/>
+          <Button Content="{DynamicResource OpenCapture}" Command="{Binding Discovery.OpenCommand}"/>
+          <Button Content="{DynamicResource ExportTxtSummary}" Command="{Binding Discovery.ExportSummaryCommand}"/>
         </StackPanel>
       </Grid>
     </Border>

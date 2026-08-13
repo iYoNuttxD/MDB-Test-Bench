@@ -9,8 +9,10 @@ public sealed class CaptureSizeLimitReachedException(long maximumBytes)
 
 public sealed class WaferCaptureRecorder : IAsyncDisposable
 {
+    private enum RecorderState { AcceptingEvents, Stopping, Finalized, Disposed }
+
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly StreamWriter _writer;
+    private StreamWriter? _writer;
     private readonly WaferCaptureDocument _header;
     private readonly long _maximumBytes;
     private readonly WaferCaptureInterpreter _interpreter;
@@ -20,8 +22,7 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
     private long _previousTick;
     private long _previousRxTick;
     private long _readChunkIndex;
-    private bool _stopped;
-    private bool _disposed;
+    private RecorderState _state = RecorderState.AcceptingEvents;
     private WaferCaptureArtifact? _artifact;
 
     private WaferCaptureRecorder(WaferCaptureDocument header, string spoolPath, long maximumBytes,
@@ -91,11 +92,9 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
         try
         {
             if (_artifact is not null) return _artifact;
-            if (!_stopped)
-            {
-                await _writer.FlushAsync(cancellationToken);
-                _stopped = true;
-            }
+            ObjectDisposedException.ThrowIf(_state == RecorderState.Disposed, this);
+            _state = RecorderState.Stopping;
+            await CloseWriterAsync();
             var timing = _header.Capture with { EndedAtUtc = DateTimeOffset.UtcNow };
             WaferProbe[] probes;
             lock (_probeGate) probes = _probes.ToArray();
@@ -107,6 +106,7 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
                 Events = []
             };
             _artifact = new(completed, EventSpoolPath, CaptureSizeBytes, SizeLimitReached);
+            _state = RecorderState.Finalized;
             return _artifact;
         }
         finally { _gate.Release(); }
@@ -131,8 +131,9 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_stopped) throw new InvalidOperationException("The capture has already stopped.");
+            ObjectDisposedException.ThrowIf(_state == RecorderState.Disposed, this);
+            if (_state != RecorderState.AcceptingEvents)
+                throw new InvalidOperationException("The capture is no longer accepting events.");
             var appendTick = Stopwatch.GetTimestamp();
             item = item with
             {
@@ -147,10 +148,10 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
             if (CaptureSizeBytes + addedBytes > _maximumBytes)
             {
                 SizeLimitReached = true;
-                _stopped = true;
+                _state = RecorderState.Stopping;
                 throw new CaptureSizeLimitReachedException(_maximumBytes);
             }
-            await _writer.WriteLineAsync(line.AsMemory(), cancellationToken);
+            await _writer!.WriteLineAsync(line.AsMemory(), cancellationToken);
             CaptureSizeBytes += addedBytes;
             recorded = item;
         }
@@ -188,17 +189,33 @@ public sealed class WaferCaptureRecorder : IAsyncDisposable
                 ?? throw new InvalidDataException("Capture spool contains an empty event.");
     }
 
+    private async Task CloseWriterAsync()
+    {
+        if (_writer is null) return;
+        await _writer.FlushAsync(CancellationToken.None);
+        await _writer.DisposeAsync();
+        _writer = null;
+    }
+
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
+        if (_state == RecorderState.Disposed) return;
+        Exception? finalizationFailure = null;
+        if (_artifact is null)
+        {
+            try { await StopAsync(CancellationToken.None); }
+            catch (Exception exception) { finalizationFailure = exception; }
+        }
         await _gate.WaitAsync();
         try
         {
-            if (_disposed) return;
-            await _writer.DisposeAsync();
-            _disposed = true;
+            if (_state == RecorderState.Disposed) return;
+            await CloseWriterAsync();
+            _state = RecorderState.Disposed;
         }
-        finally { _gate.Release(); _gate.Dispose(); }
+        finally { _gate.Release(); }
         GC.SuppressFinalize(this);
+        if (finalizationFailure is not null)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(finalizationFailure).Throw();
     }
 }

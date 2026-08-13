@@ -3,59 +3,59 @@
              x:DataType="vm:MainWindowViewModel">
   <ScrollViewer Padding="28">
     <TabControl>
-      <TabItem Header="Structured">
+      <TabItem Header="{DynamicResource Structured}">
         <Grid ColumnDefinitions="2*,3*" ColumnSpacing="16" Margin="0,18,0,0">
           <Border Classes="card">
             <StackPanel Spacing="10">
-              <TextBlock Classes="label" Text="SEMANTIC COMMAND" />
+              <TextBlock Classes="label" Text="{DynamicResource SemanticCommand}" />
               <ComboBox ItemsSource="{Binding Manual.CommandOptions}" SelectedItem="{Binding Manual.SelectedCommand}" />
-              <TextBlock Classes="label" Text="CASHLESS DEVICE" />
+              <TextBlock Classes="label" Text="{DynamicResource CashlessDevice}" />
               <ComboBox ItemsSource="{Binding Manual.DeviceOptions}" SelectedItem="{Binding Manual.SelectedDevice}" />
-              <TextBlock Classes="label" Text="PRICE" />
-              <TextBox Text="{Binding Manual.Price}" PlaceholderText="5.00" />
-              <TextBlock Classes="label" Text="PRODUCT NUMBER" />
-              <TextBox Text="{Binding Manual.Product}" PlaceholderText="0001" />
-              <TextBlock Classes="label" Text="CURRENCY / VALUE" />
-              <TextBox Text="{Binding Manual.Value}" PlaceholderText="Optional" />
-              <TextBlock Text="Manual simulator values use scale factor 1 and 2 decimal places until Reader Config negotiation is wired to the session." Foreground="#93A1B5" TextWrapping="Wrap" />
-              <Button Classes="primary" Content="Send structured command" Command="{Binding Manual.SendStructuredCommand}"
+              <TextBlock Classes="label" Text="{DynamicResource Price}" />
+              <TextBox Text="{Binding Manual.Price}" PlaceholderText="{DynamicResource PriceExample}" />
+              <TextBlock Classes="label" Text="{DynamicResource ProductNumber}" />
+              <TextBox Text="{Binding Manual.Product}" PlaceholderText="{DynamicResource ProductExample}" />
+              <TextBlock Classes="label" Text="{DynamicResource CurrencyValue}" />
+              <TextBox Text="{Binding Manual.Value}" PlaceholderText="{DynamicResource Optional}" />
+              <TextBlock Text="{DynamicResource ManualScaleHelp}" Foreground="#93A1B5" TextWrapping="Wrap" />
+              <Button Classes="primary" Content="{DynamicResource SendStructured}" Command="{Binding Manual.SendStructuredCommand}"
                       IsEnabled="{Binding Manual.CanUseStructured}" HorizontalAlignment="Stretch" />
               <TextBlock IsVisible="{Binding IsHardwareSelected}"
-                         Text="Wafer codec not validated. Structured hardware sending is disabled; use Wafer Discovery for hardware analysis."
+                         Text="{DynamicResource StructuredHardwareDisabled}"
                          Foreground="#FFD166" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
           <StackPanel Grid.Column="1" Spacing="16">
             <Border Classes="card">
               <StackPanel Spacing="10">
-                <TextBlock Classes="label" Text="SEMANTIC + RAW MDB PREVIEW" />
+                <TextBlock Classes="label" Text="{DynamicResource SemanticRawPreview}" />
                 <TextBlock Classes="mono" Text="{Binding Manual.Preview}" TextWrapping="Wrap" FontSize="15" />
-                <TextBlock Text="MDB bytes include the MDB checksum. They are not Wafer serial framing." Foreground="#FFD166" />
+                <TextBlock Text="{DynamicResource MdbBytesHelp}" Foreground="#FFD166" />
               </StackPanel>
             </Border>
             <Border Classes="card">
               <StackPanel Spacing="8">
-                <TextBlock Classes="label" Text="STATE MACHINE" />
+                <TextBlock Classes="label" Text="{DynamicResource StateMachine}" />
                 <TextBlock Classes="value" Text="{Binding Manual.CurrentState}" />
-                <TextBlock Text="Incompatible commands are blocked before transport exchange." Foreground="#93A1B5" />
+                <TextBlock Text="{DynamicResource StateMachineHelp}" Foreground="#93A1B5" />
                 <TextBlock Text="{Binding Manual.Message}" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
           </StackPanel>
         </Grid>
       </TabItem>
-      <TabItem Header="Advanced / Raw Adapter">
+      <TabItem Header="{DynamicResource AdvancedRawAdapter}">
         <Border Classes="card" Margin="0,18,0,0" MaxWidth="850" HorizontalAlignment="Left">
           <StackPanel Spacing="12">
-            <TextBlock Text="ADVANCED / ADAPTER DEBUG" Foreground="#FFD166" FontWeight="Bold" />
-            <TextBlock Text="Simulator raw diagnostic only. Hardware Raw Adapter moved to Wafer Discovery so every physical TX is recorded in Capture."
+            <TextBlock Text="{DynamicResource AdapterDebug}" Foreground="#FFD166" FontWeight="Bold" />
+            <TextBlock Text="{DynamicResource SimulatorRawHelp}"
                        TextWrapping="Wrap" Foreground="#93A1B5" />
-            <TextBox Text="{Binding Manual.RawHex}" PlaceholderText="Example: 01 A0 FF" AcceptsReturn="True" MinHeight="90"
+            <TextBox Text="{Binding Manual.RawHex}" PlaceholderText="{DynamicResource RawHexExample}" AcceptsReturn="True" MinHeight="90"
                      FontFamily="Menlo,Consolas,monospace" />
             <TextBlock Classes="mono" Text="{Binding Manual.RawValidation}" TextWrapping="Wrap" />
-            <CheckBox Content="I reviewed and confirm this simulator raw payload" IsChecked="{Binding Manual.RawConfirmed}" />
+            <CheckBox Content="{DynamicResource ConfirmSimulatorRaw}" IsChecked="{Binding Manual.RawConfirmed}" />
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <Button Classes="primary" Content="Send simulator raw payload" Command="{Binding Manual.SendRawCommand}" IsEnabled="{Binding Manual.CanUseRaw}" />
+              <Button Classes="primary" Content="{DynamicResource SendSimulatorRaw}" Command="{Binding Manual.SendRawCommand}" IsEnabled="{Binding Manual.CanUseRaw}" />
               <TextBlock Text="{Binding Manual.Message}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </StackPanel>

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MdbTestBench.Transport.Abstractions;
@@ -197,6 +198,79 @@ public sealed class WaferCaptureTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task StopClosesWriterBeforeSpoolAnalysisAndAllowsExclusiveOpen()
+    {
+        var recorder = await WaferCaptureRecorder.StartAsync(Header(), _directory);
+        await using (recorder)
+        {
+            var tick = Stopwatch.GetTimestamp();
+            await recorder.RecordRawAsync(WaferCaptureDirection.Rx, new byte[] { 0x03, 0xFF, 0xFE },
+                "read", tick, tick + 1, "Open");
+
+            var artifact = await recorder.StopAsync();
+
+            await using var exclusive = new FileStream(artifact.EventSpoolPath, FileMode.Open,
+                FileAccess.ReadWrite, FileShare.None);
+            Assert.True(exclusive.Length > 0);
+            Assert.Equal(1, artifact.Header.Statistics.RxEvents);
+        }
+    }
+
+    [Fact]
+    public async Task CaptureJsonIsCultureInvariantAndKeepsMachineIdentifiersStable()
+    {
+        var recorder = await WaferCaptureRecorder.StartAsync(Header(), _directory);
+        await using (recorder)
+        {
+            var tick = Stopwatch.GetTimestamp();
+            await recorder.RecordRawAsync(WaferCaptureDirection.Rx, new byte[] { 0x13, 0x00, 0xFF },
+                "VendRequest", tick, tick + 1, "Open");
+            var artifact = await recorder.StopAsync();
+            var serializer = new WaferCaptureSerializer();
+            var portuguesePath = Path.Combine(_directory, "pt-BR.mdbcap.json");
+            var englishPath = Path.Combine(_directory, "en-US.mdbcap.json");
+
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("pt-BR");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("pt-BR");
+            await serializer.ExportAsync(artifact, portuguesePath);
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            await serializer.ExportAsync(artifact, englishPath);
+
+            Assert.Equal(await File.ReadAllBytesAsync(englishPath), await File.ReadAllBytesAsync(portuguesePath));
+            var document = await serializer.LoadAsync(portuguesePath);
+            var raw = Assert.Single(document.Events, item => item.Direction == WaferCaptureDirection.Rx);
+            Assert.Equal("VendRequest", raw.Operation);
+            Assert.Equal(new byte[] { 0x13, 0x00, 0xFF }, raw.GetRawBytes());
+        }
+    }
+
+    [Fact]
+    public async Task SizeLimitStillFinalizesImmutableSpoolAndCreatesOneArtifact()
+    {
+        var recorder = await WaferCaptureRecorder.StartAsync(Header(), _directory, 4096);
+        await using (recorder)
+        {
+            var tick = Stopwatch.GetTimestamp();
+            await Assert.ThrowsAsync<CaptureSizeLimitReachedException>(async () =>
+            {
+                while (true)
+                    await recorder.RecordRawAsync(WaferCaptureDirection.Rx, new byte[128],
+                        "read", tick, ++tick, "Open");
+            });
+
+            var artifacts = await Task.WhenAll(recorder.StopAsync(), recorder.StopAsync());
+
+            Assert.Same(artifacts[0], artifacts[1]);
+            Assert.True(artifacts[0].SizeLimitReached);
+            Assert.True(artifacts[0].Header.Statistics.RxEvents > 0);
+            await using var exclusive = new FileStream(artifacts[0].EventSpoolPath, FileMode.Open,
+                FileAccess.ReadWrite, FileShare.None);
+            Assert.True(exclusive.Length > 0);
+        }
+    }
+
+    [Fact]
     public async Task StopWaitsForInFlightWriteAndDoesNotLoseTxEvent()
     {
         var transport = new CountingRawTransport { WriteDelay = TimeSpan.FromMilliseconds(30) };
@@ -224,6 +298,7 @@ public sealed class WaferCaptureTests : IAsyncLifetime
         controller.EventRecorded += (_, item) => recorded.Add(item);
         await controller.StartAsync();
 
+        await controller.DisposeAsync();
         await controller.DisposeAsync();
 
         Assert.Equal(1, transport.DisconnectCount);

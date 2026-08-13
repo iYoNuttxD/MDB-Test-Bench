@@ -5,22 +5,44 @@ using MdbTestBench.Core.Profiles;
 using MdbTestBench.Core.Protocol;
 using MdbTestBench.TestEngine.Models;
 using System.Globalization;
+using MdbTestBench.App.Localization;
 
 namespace MdbTestBench.App.ViewModels;
 
 public sealed class LogEntryViewModel
 {
-    public LogEntryViewModel(MdbLogEntry entry) => Entry = entry;
+    private readonly ILocalizationService _localization;
+    public LogEntryViewModel(MdbLogEntry entry, ILocalizationService localization) { Entry = entry; _localization = localization; }
 
     public MdbLogEntry Entry { get; }
-    public string Timestamp => Entry.Timestamp.ToString("HH:mm:ss.ffffff", CultureInfo.InvariantCulture);
+    public string Timestamp => Entry.Timestamp.ToString("T", _localization.CurrentCulture) + Entry.Timestamp.ToString(".ffffff", CultureInfo.InvariantCulture);
     public string Direction => Entry.Direction.ToString().ToUpperInvariant();
     public string Command => Entry.Command;
-    public string Description => Entry.DecodedDescription;
+    public string Description => LocalizeDescription(Entry.DecodedDescription);
     public string RawHex => MdbLogFormatter.FormatHex(Entry.RawData.Span);
-    public string Severity => Entry.Severity.ToString();
+    public string Severity => _localization.Get("Severity" + Entry.Severity);
     public bool IsError => Entry.Severity >= MdbLogSeverity.Error;
     public string Line => $"{Timestamp} {Direction,-2} {Command,-22} {Description} RAW: {RawHex}";
+
+    private string LocalizeDescription(string value)
+    {
+        const string serialPrefix = "Serial adapter connected on ";
+        const string serialSuffix = "; logical Wafer codec unavailable";
+        if (value.StartsWith(serialPrefix, StringComparison.Ordinal) && value.EndsWith(serialSuffix, StringComparison.Ordinal))
+        {
+            var port = value[serialPrefix.Length..^serialSuffix.Length];
+            return _localization.Format("LogSerialAdapterConnected", port);
+        }
+
+        return value switch
+        {
+            "Simulator connected" => _localization.Get("LogSimulatorConnected"),
+            "Scenario request" => _localization.Get("LogScenarioRequest"),
+            "Logical MDB command" => _localization.Get("LogLogicalMdbCommand"),
+            "Advanced / Adapter Debug" => _localization.Get("LogAdapterDebug"),
+            _ => value
+        };
+    }
 }
 
 public sealed class ProfileEditorViewModel : ViewModelBase
@@ -92,23 +114,30 @@ public sealed class ProfileEditorViewModel : ViewModelBase
     };
 }
 
-public sealed class ScenarioDisplayViewModel(TestScenario scenario) : ViewModelBase
+public sealed class ScenarioDisplayViewModel(TestScenario scenario, ILocalizationService localization) : ViewModelBase
 {
-    private string _result = "NOT RUN";
+    private string _result = localization.Get("NotRun");
     private string _duration = "—";
     public TestScenario Scenario { get; } = scenario;
-    public string Name => Scenario.Name;
-    public string Description => Scenario.Description ?? string.Empty;
+    private string ResourceStem => "Scenario_" + Scenario.Id.Replace('-', '_');
+    public string Name => localization.Get(ResourceStem + "_Name");
+    public string Description => localization.Get(ResourceStem + "_Description");
     public string RequiredProfile => Scenario.RequiredProfile.ToString();
     public string Result { get => _result; set => SetProperty(ref _result, value); }
     public string Duration { get => _duration; set => SetProperty(ref _duration, value); }
     public ObservableCollection<ScenarioStepDisplayViewModel> Steps { get; } =
-        new(scenario.Steps.Select((step, index) => new ScenarioStepDisplayViewModel(index + 1, step)));
+        new(scenario.Steps.Select((step, index) => new ScenarioStepDisplayViewModel(index + 1, step, localization)));
+    public void RefreshLocalization()
+    {
+        RaisePropertyChanged(nameof(Name)); RaisePropertyChanged(nameof(Description));
+        if (Result is "NOT RUN" or "NÃO EXECUTADO") Result = localization.Get("NotRun");
+        foreach (var step in Steps) step.RefreshLocalization();
+    }
 }
 
-public sealed class ScenarioStepDisplayViewModel(int number, TestStep step) : ViewModelBase
+public sealed class ScenarioStepDisplayViewModel(int number, TestStep step, ILocalizationService localization) : ViewModelBase
 {
-    private string _status = "PENDING";
+    private string _status = localization.Get("Pending");
     private string _received = "—";
     public int Number { get; } = number;
     public string NumberText => Number.ToString("D2", CultureInfo.InvariantCulture);
@@ -116,6 +145,10 @@ public sealed class ScenarioStepDisplayViewModel(int number, TestStep step) : Vi
     public string Expected => step.ExpectedResponse.ToString();
     public string Status { get => _status; set => SetProperty(ref _status, value); }
     public string Received { get => _received; set => SetProperty(ref _received, value); }
+    public void RefreshLocalization()
+    {
+        if (Status is "PENDING" or "PENDENTE") Status = localization.Get("Pending");
+    }
 }
 
 public sealed record ProtocolSupportViewModel(
