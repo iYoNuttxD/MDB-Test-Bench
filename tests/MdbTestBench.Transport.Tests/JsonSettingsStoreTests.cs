@@ -90,6 +90,7 @@ public sealed class JsonSettingsStoreTests
             Assert.Equal(9_600, settings.BaudRate);
             Assert.Equal(8, settings.DataBits);
             Assert.Equal(2_000, settings.TimeoutMilliseconds);
+            Assert.Equal(100, settings.CaptureMaximumMegabytes);
             Assert.Equal(1_280, settings.WindowWidth);
             Assert.Equal(800, settings.WindowHeight);
         }

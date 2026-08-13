@@ -14,6 +14,7 @@ public sealed class SerialConfigurationTests
         Assert.Equal(9_600, settings.BaudRate);
         Assert.Equal(8, settings.DataBits);
         Assert.Equal(4_096, settings.ReadBufferSize);
+        Assert.Equal(System.IO.Ports.Handshake.None, settings.Handshake);
     }
 
     [Theory]

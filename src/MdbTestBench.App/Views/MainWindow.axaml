@@ -54,6 +54,7 @@
         <views:AutomaticView IsVisible="{Binding IsAutomaticVisible}" />
         <views:ProfilesView IsVisible="{Binding IsProfilesVisible}" />
         <views:LogsView IsVisible="{Binding IsLogsVisible}" />
+        <views:WaferDiscoveryView IsVisible="{Binding IsWaferDiscoveryVisible}" />
         <views:SettingsView IsVisible="{Binding IsSettingsVisible}" />
       </Grid>
     </Grid>

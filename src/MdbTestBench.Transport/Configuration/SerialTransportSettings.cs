@@ -12,6 +12,7 @@ public sealed record SerialTransportSettings
     public int DataBits { get; init; } = 8;
     public StopBits StopBits { get; init; } = StopBits.One;
     public Parity Parity { get; init; } = Parity.None;
+    public Handshake Handshake { get; init; } = Handshake.None;
     public PollingMode PollingMode { get; init; } = PollingMode.AdapterManaged;
     public TimeSpan OperationTimeout { get; init; } = TimeSpan.FromSeconds(2);
     public int ReadBufferSize { get; init; } = 4096;
@@ -27,6 +28,7 @@ public sealed record SerialTransportSettings
             throw new ArgumentOutOfRangeException(nameof(ReadBufferSize),
                 $"Read buffer size must be between 1 and {MaxReadBufferSize} bytes.");
         if (!Enum.IsDefined(Parity)) throw new ArgumentOutOfRangeException(nameof(Parity));
+        if (!Enum.IsDefined(Handshake)) throw new ArgumentOutOfRangeException(nameof(Handshake));
         if (!Enum.IsDefined(StopBits) || StopBits == StopBits.None)
             throw new ArgumentOutOfRangeException(nameof(StopBits));
     }

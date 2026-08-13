@@ -62,6 +62,7 @@ public sealed class WorkbenchSession(InMemoryMdbLogSink logs) : IAsyncDisposable
                 DataBits = settings.DataBits,
                 Parity = settings.Parity,
                 StopBits = settings.StopBits,
+                Handshake = settings.Handshake,
                 PollingMode = settings.PollingMode,
                 OperationTimeout = TimeSpan.FromMilliseconds(settings.TimeoutMilliseconds)
             };

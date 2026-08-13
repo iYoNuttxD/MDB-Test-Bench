@@ -16,6 +16,8 @@ The Core now produces standard MDB cashless blocks (`address/command + data + MD
 
 Structured hardware commands are intentionally disabled in the UI until the codec is validated. Advanced / Adapter Debug can send user-confirmed data as `BinaryBytes` or `AsciiHex`, with None/CR/LF/CRLF terminators. Those settings are experimental probes, not protocol claims.
 
-Physical tests must determine serial parameters, initialization, byte representation, terminator, framing, whether MDB checksum bytes are passed through, response boundaries, incomplete-data behavior, error behavior, timing, mode-bit handling performed by the adapter, and polling ownership. Record evidence in [TESTING_WITH_HARDWARE.md](TESTING_WITH_HARDWARE.md) before implementing a codec.
+Wafer Discovery is the evidence path used before a codec exists. It captures actual serial read chunks before interpretation, exact formatted TX bytes, monotonic event deltas, markers, lifecycle/errors, optional operator-saved probes, and a recalculable possible-MDB overlay. It exports the versioned privacy-safe format documented in [CAPTURE_FORMAT.md](CAPTURE_FORMAT.md). Repeated prefixes/suffixes, delimiters, traffic appearance and periodic RX are statistical observations only. They do not establish framing or POLL ownership.
+
+Physical tests must determine serial parameters, initialization, byte representation, terminator, framing, whether MDB checksum bytes are passed through, response boundaries, incomplete-data behavior, error behavior, timing, mode-bit handling performed by the adapter, and polling ownership. Record evidence in [TESTING_WITH_HARDWARE.md](TESTING_WITH_HARDWARE.md), export the `.mdbcap.json`, and obtain repeatable review before implementing a codec.
 
 The distributed v0.1 packages therefore contain no registered production codec. A successful application smoke test or simulator scenario says nothing about revision `2022061K5` compatibility.

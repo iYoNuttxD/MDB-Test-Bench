@@ -6,7 +6,7 @@ The simulator is a development tool, not a statement of MDB conformance. The bin
 
 ## Functional scope
 
-- Avalonia MVVM UI with Dashboard, Manual, Automatic, Profiles, Logs, and Settings.
+- Avalonia MVVM UI with Dashboard, Manual, Automatic, Profiles, Logs, Wafer Discovery, and Settings.
 - Explicit SIMULATION identity, connection lifecycle, and no automatic serial connection.
 - Structured simulator actions guarded by the VMC state machine and encoded as deterministic MDB bytes.
 - Cashless Device #1/#2 addressing, MDB checksum, big-endian values, packed-BCD currency, and monetary scaling helpers.
@@ -18,6 +18,8 @@ The simulator is a development tool, not a statement of MDB conformance. The bin
 - Seven built-in asynchronous scenarios with cancellation and structured results.
 - Bounded structured traffic log with filtering, pause-view, copy, clear, and TXT/JSON export.
 - Level 1, Level 2, Level 3, and custom JSON profiles with independent capability status.
+- Wafer Discovery with exact RX-chunk/TX evidence, monotonic deltas, operator markers, manual probes, bounded streaming capture, conservative protocol observations, and offline import/reanalysis.
+- Privacy-safe, versioned `*.mdbcap.json` export plus a human-readable TXT summary.
 
 ## Architecture
 
@@ -81,6 +83,7 @@ The packaged executable supports a non-GUI distribution smoke test:
 
 ```bash
 ./MDB-Test-Bench --smoke-test
+./MDB-Test-Bench --discovery-smoke-test
 ```
 
 ## Supported Platforms
@@ -96,7 +99,7 @@ The user does not need to install .NET. macOS bundles are unsigned until an Appl
 
 ## Hardware
 
-The reported adapter is Wafer MDB-RS232 revision `2022061K5`. Its host framing and polling behavior remain unconfirmed. Structured hardware commands remain disabled; only operator-confirmed Adapter Debug bytes can be sent. Follow [the hardware checklist](docs/TESTING_WITH_HARDWARE.md) and preserve exact captures before implementing a codec.
+The reported adapter is Wafer MDB-RS232 revision `2022061K5`. Its host framing and polling behavior remain unconfirmed. Structured hardware commands remain disabled; only operator-confirmed Adapter Debug bytes can be sent. Wafer Discovery preserves raw read chunks before interpretation and exports them for offline analysis. Follow [the hardware checklist](docs/TESTING_WITH_HARDWARE.md) and preserve exact captures before implementing a codec.
 
 ## Downloads / Releases
 
@@ -113,6 +116,6 @@ No tag or GitHub Release is created automatically during development. Local pack
 
 ## Local data
 
-Settings, custom profiles, future custom scenarios, exports, and logs are stored below the operating system's per-user local application-data directory in `MdbTestBench/`. Invalid or oversized JSON falls back safely or is rejected. A saved serial name is selected only when currently discovered.
+Settings, custom profiles, captures, temporary capture spools, exports, and logs are stored below the operating system's per-user local application-data directory in `MdbTestBench/`. Captures default to a configurable 100 MB maximum. Invalid or oversized JSON is rejected without closing the application. A saved serial name is selected only when currently discovered.
 
-Further reading: [architecture](docs/ARCHITECTURE.md), [MDB reference](docs/MDB_REFERENCE.md), [implementation status](docs/MDB_IMPLEMENTATION_STATUS.md), [hardware](docs/HARDWARE.md), [MDB scope](docs/MDB_SCOPE.md), and [Wafer integration](docs/WAFER_INTEGRATION.md).
+Further reading: [architecture](docs/ARCHITECTURE.md), [capture format](docs/CAPTURE_FORMAT.md), [Discovery mode](docs/WAFER_DISCOVERY.md), [MDB reference](docs/MDB_REFERENCE.md), [implementation status](docs/MDB_IMPLEMENTATION_STATUS.md), [hardware](docs/HARDWARE.md), [MDB scope](docs/MDB_SCOPE.md), and [Wafer integration](docs/WAFER_INTEGRATION.md).

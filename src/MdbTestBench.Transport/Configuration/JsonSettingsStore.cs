@@ -72,12 +72,15 @@ public sealed class JsonSettingsStore
             StopBits = Enum.IsDefined(settings.StopBits) && settings.StopBits != System.IO.Ports.StopBits.None
                 ? settings.StopBits : defaults.StopBits,
             Parity = Enum.IsDefined(settings.Parity) ? settings.Parity : defaults.Parity,
+            Handshake = Enum.IsDefined(settings.Handshake) ? settings.Handshake : defaults.Handshake,
             PollingMode = Enum.IsDefined(settings.PollingMode) ? settings.PollingMode : defaults.PollingMode,
             TimeoutMilliseconds = settings.TimeoutMilliseconds is >= 50 and <= 120_000
                 ? settings.TimeoutMilliseconds : defaults.TimeoutMilliseconds,
             WireFormat = Enum.IsDefined(settings.WireFormat) ? settings.WireFormat : defaults.WireFormat,
             AsciiHexTerminator = Enum.IsDefined(settings.AsciiHexTerminator)
                 ? settings.AsciiHexTerminator : defaults.AsciiHexTerminator,
+            CaptureMaximumMegabytes = settings.CaptureMaximumMegabytes is >= 1 and <= 1024
+                ? settings.CaptureMaximumMegabytes : defaults.CaptureMaximumMegabytes,
             LastProfileId = settings.LastProfileId is { Length: > 0 and <= 256 }
                 ? settings.LastProfileId : defaults.LastProfileId,
             WindowWidth = settings.WindowWidth is >= 920 and <= 10_000 ? settings.WindowWidth : defaults.WindowWidth,

@@ -38,10 +38,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
     private int _selectedDataBits;
     private Parity _selectedParity;
     private StopBits _selectedStopBits;
+    private Handshake _selectedHandshake;
     private PollingMode _selectedPollingMode;
     private SerialWireFormat _selectedWireFormat;
     private AsciiHexTerminator _selectedTerminator;
     private int _timeoutMilliseconds;
+    private int _captureMaximumMegabytes;
     private bool _isConnected;
     private string _connectionStatus = "Disconnected";
     private string _lastError = "None";
@@ -92,10 +94,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         _selectedDataBits = settings.DataBits;
         _selectedParity = settings.Parity;
         _selectedStopBits = settings.StopBits;
+        _selectedHandshake = settings.Handshake;
         _selectedPollingMode = settings.PollingMode;
         _selectedWireFormat = settings.WireFormat;
         _selectedTerminator = settings.AsciiHexTerminator;
         _timeoutMilliseconds = settings.TimeoutMilliseconds;
+        _captureMaximumMegabytes = settings.CaptureMaximumMegabytes;
         _windowWidth = settings.WindowWidth;
         _windowHeight = settings.WindowHeight;
 
@@ -106,6 +110,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
             new("Automatic", "Asynchronous repeatable simulator scenarios."),
             new("Profiles", "Feature levels and independently declared capabilities."),
             new("Logs", "Filter, inspect, copy and export session traffic."),
+            new("Wafer Discovery", "Preserve, analyze, export and reopen raw adapter evidence."),
             new("Settings", "Transport, serial and adapter debug configuration.")
         };
         _selectedPage = Pages[0];
@@ -118,6 +123,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         SelectedProfile = Profiles.FirstOrDefault(profile => profile.Id == settings.LastProfileId) ?? Profiles.FirstOrDefault();
         foreach (var scenario in ScenarioCatalog.CreateBuiltIn()) Scenarios.Add(new ScenarioDisplayViewModel(scenario));
         SelectedScenario = Scenarios.FirstOrDefault();
+        Discovery = new WaferDiscoveryViewModel(_paths, BuildSettings, () => IsConnected);
 
         NavigateCommand = new RelayCommand(page => { if (page is NavigationItemViewModel item) SelectedPage = item; });
         RefreshPortsCommand = new RelayCommand(_ => RefreshPorts());
@@ -150,6 +156,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
     public ObservableCollection<MdbProfile> Profiles { get; } = [];
     public ObservableCollection<ScenarioDisplayViewModel> Scenarios { get; } = [];
     public ProfileEditorViewModel ProfileEditor { get; } = new();
+    public WaferDiscoveryViewModel Discovery { get; }
 
     public IReadOnlyList<string> TransportLabels { get; } = ["Simulator", "Serial / Wafer"];
     public IReadOnlyList<SimulatorBehavior> SimulatorBehaviorOptions { get; } = Enum.GetValues<SimulatorBehavior>();
@@ -157,6 +164,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
     public IReadOnlyList<int> DataBitsOptions { get; } = [5, 6, 7, 8];
     public IReadOnlyList<Parity> ParityOptions { get; } = Enum.GetValues<Parity>();
     public IReadOnlyList<StopBits> StopBitsOptions { get; } = [StopBits.One, StopBits.OnePointFive, StopBits.Two];
+    public IReadOnlyList<Handshake> HandshakeOptions { get; } = Enum.GetValues<Handshake>();
     public IReadOnlyList<PollingMode> PollingModeOptions { get; } = Enum.GetValues<PollingMode>();
     public IReadOnlyList<SerialWireFormat> WireFormatOptions { get; } = Enum.GetValues<SerialWireFormat>();
     public IReadOnlyList<AsciiHexTerminator> TerminatorOptions { get; } = Enum.GetValues<AsciiHexTerminator>();
@@ -200,6 +208,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
     public bool IsAutomaticVisible => SelectedPage.Title == "Automatic";
     public bool IsProfilesVisible => SelectedPage.Title == "Profiles";
     public bool IsLogsVisible => SelectedPage.Title == "Logs";
+    public bool IsWaferDiscoveryVisible => SelectedPage.Title == "Wafer Discovery";
     public bool IsSettingsVisible => SelectedPage.Title == "Settings";
 
     public TransportKind SelectedTransport
@@ -231,10 +240,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
     public int SelectedDataBits { get => _selectedDataBits; set => SetProperty(ref _selectedDataBits, value); }
     public Parity SelectedParity { get => _selectedParity; set => SetProperty(ref _selectedParity, value); }
     public StopBits SelectedStopBits { get => _selectedStopBits; set => SetProperty(ref _selectedStopBits, value); }
+    public Handshake SelectedHandshake { get => _selectedHandshake; set => SetProperty(ref _selectedHandshake, value); }
     public PollingMode SelectedPollingMode { get => _selectedPollingMode; set { if (SetProperty(ref _selectedPollingMode, value)) RaisePropertyChanged(nameof(PollingDisplay)); } }
     public SerialWireFormat SelectedWireFormat { get => _selectedWireFormat; set { if (SetProperty(ref _selectedWireFormat, value)) RaisePropertyChanged(nameof(IsAsciiHex)); } }
     public AsciiHexTerminator SelectedTerminator { get => _selectedTerminator; set => SetProperty(ref _selectedTerminator, value); }
     public int TimeoutMilliseconds { get => _timeoutMilliseconds; set => SetProperty(ref _timeoutMilliseconds, value); }
+    public int CaptureMaximumMegabytes { get => _captureMaximumMegabytes; set => SetProperty(ref _captureMaximumMegabytes, value); }
     public bool IsSimulationSelected => SelectedTransport == TransportKind.Simulated;
     public bool IsHardwareSelected => !IsSimulationSelected;
     public bool ShowSimulationBanner => IsConnected ? _session.IsSimulation : IsSimulationSelected;
@@ -633,10 +644,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         DataBits = SelectedDataBits,
         Parity = SelectedParity,
         StopBits = SelectedStopBits,
+        Handshake = SelectedHandshake,
         PollingMode = SelectedPollingMode,
         TimeoutMilliseconds = Math.Clamp(TimeoutMilliseconds, 50, 120_000),
         WireFormat = SelectedWireFormat,
         AsciiHexTerminator = SelectedTerminator,
+        CaptureMaximumMegabytes = Math.Clamp(CaptureMaximumMegabytes, 1, 1024),
         LastProfileId = SelectedProfile?.Id ?? "standard-level1",
         WindowWidth = WindowWidth,
         WindowHeight = WindowHeight
@@ -657,6 +670,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         RaisePropertyChanged(nameof(IsAutomaticVisible));
         RaisePropertyChanged(nameof(IsProfilesVisible));
         RaisePropertyChanged(nameof(IsLogsVisible));
+        RaisePropertyChanged(nameof(IsWaferDiscoveryVisible));
         RaisePropertyChanged(nameof(IsSettingsVisible));
     }
 
@@ -677,6 +691,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         _logs.EntryAdded -= OnLogAdded;
         _scenarioCancellation?.Cancel();
         _scenarioCancellation?.Dispose();
+        await Discovery.DisposeAsync();
         await _session.DisposeAsync();
         GC.SuppressFinalize(this);
     }

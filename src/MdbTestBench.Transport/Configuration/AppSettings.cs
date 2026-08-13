@@ -16,10 +16,12 @@ public sealed record AppSettings
     public int DataBits { get; init; } = 8;
     public StopBits StopBits { get; init; } = StopBits.One;
     public Parity Parity { get; init; } = Parity.None;
+    public Handshake Handshake { get; init; } = Handshake.None;
     public PollingMode PollingMode { get; init; } = PollingMode.AdapterManaged;
     public int TimeoutMilliseconds { get; init; } = 2_000;
     public SerialWireFormat WireFormat { get; init; } = SerialWireFormat.BinaryBytes;
     public AsciiHexTerminator AsciiHexTerminator { get; init; } = AsciiHexTerminator.None;
+    public int CaptureMaximumMegabytes { get; init; } = 100;
     public string LastProfileId { get; init; } = "standard-level1";
     public double WindowWidth { get; init; } = 1_280;
     public double WindowHeight { get; init; } = 800;

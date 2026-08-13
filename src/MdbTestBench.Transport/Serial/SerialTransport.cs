@@ -27,7 +27,8 @@ public sealed class SerialTransport(SerialTransportSettings settings) : IRawByte
             {
                 ReadTimeout = (int)settings.OperationTimeout.TotalMilliseconds,
                 WriteTimeout = (int)settings.OperationTimeout.TotalMilliseconds,
-                ReadBufferSize = settings.ReadBufferSize
+                ReadBufferSize = settings.ReadBufferSize,
+                Handshake = settings.Handshake
             };
             try
             {

@@ -41,6 +41,8 @@ The encoder emits binary MDB bytes, never ASCII HEX. It includes the standard ch
 
 This formatter is entirely outside Core and does not claim to be the Wafer protocol.
 
+Discovery capture is also a Transport responsibility. `WaferDiscoveryCaptureController` reads `IRawByteTransport` directly and writes each returned RX chunk, each exact formatted TX payload, lifecycle event, error, and operator marker to `WaferCaptureRecorder`. The recorder uses an append-only bounded temporary spool; it never infers frame boundaries. `WaferCaptureInterpreter` adds a replaceable MDB interpretation overlay, while `WaferCaptureAnalyzer` produces conservative length/delimiter/appearance/periodicity observations. Neither mutates raw evidence. `WaferCaptureSerializer` creates and validates portable format-version-1 `.mdbcap.json` files.
+
 `WaferMdbRs232Transport` still requires an injected `IWaferProtocolCodec`. Its contract accepts an already encoded MDB block and returns an MDB response block; it does not receive semantic command objects. No default codec exists. Until a validated codec is implemented, the UI disables Structured hardware actions and exposes only confirmed Advanced / Adapter Debug raw exchange.
 
 `SimulatedCashlessTransport` implements both logical and raw development paths. Structured requests pass through `MdbCashlessEncoder`/`MdbCashlessDecoder`, and simulated responses are valid MDB response blocks decoded by the same Core decoder. It receives or creates a `VmcSimulator`, so the same Core state machine is exercised by UI flows and headless end-to-end tests. It supports Normal, AlwaysApprove, AlwaysDeny, Timeout, MalformedResponse, and UnexpectedResponse behavior.
@@ -53,13 +55,13 @@ This formatter is entirely outside Core and does not claim to be the Wafer proto
 
 The logical lifecycle is Disconnected → Connected → Reset → Disabled → Enabled → SessionIdle → VendPending → VendApproved/VendDenied → SessionComplete → Enabled. RESET receives ACK, and JUST RESET is a distinct POLL response. Invalid Structured commands are blocked through `VmcStateMachine.CanFire`; Advanced raw actions remain possible only with an explicit warning and confirmation.
 
-All transport/test operations use `async`/`await` and `CancellationToken`. Stateful exchanges are serialized with semaphores. Transports implement `IAsyncDisposable`. No busy-wait, `Thread.Sleep`, database, cloud service, or web backend is used.
+All transport/test operations use `async`/`await` and `CancellationToken`. Stateful exchanges are serialized with semaphores. Transports implement `IAsyncDisposable`. Discovery rejects starting while the normal workbench owns a connection, preventing competing reads from one serial port. No busy-wait, `Thread.Sleep`, database, cloud service, or web backend is used.
 
-In-memory traffic retention is bounded to 10,000 entries. Raw HEX and diagnostic payloads are bounded to 4,096 bytes, serial receive buffers are capped at 65,536 bytes, and scenarios are validated before execution.
+In-memory traffic retention and the Discovery live view are bounded to 10,000 entries. Raw HEX and diagnostic payloads are bounded to 4,096 bytes, serial receive buffers are capped at 65,536 bytes, capture spools default to 100 MB, imports default to 100 MB/1,000,000 events, and scenarios are validated before execution. Capture summary analysis streams the spool instead of retaining event objects.
 
 ## Persistence
 
-`AppPaths` resolves the operating system's per-user local application-data directory. Settings, window size, last profile, custom profiles, future custom scenarios, and exports live outside the application installation directory. Custom profile storage and exported copies use separate directories. Imported JSON is size-limited, validated, and saved under generated identifiers; path containment is enforced for managed files. A saved serial name is cleared from selection when discovery no longer returns it.
+`AppPaths` resolves the operating system's per-user local application-data directory. Settings, window size, last profile, custom profiles, captures, capture spools, and exports live outside the application installation directory. Custom profile storage and exported copies use separate directories. Imported JSON is size-limited and validated; managed exports use generated safe names. A saved serial name is cleared from selection when discovery no longer returns it. Privacy-safe capture metadata excludes username, home directory, hostname and network addresses by default.
 
 ## Distribution boundary
 

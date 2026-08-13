@@ -11,6 +11,8 @@ public sealed class AppPaths
         Scenarios = Path.Combine(Root, "scenarios");
         Logs = Path.Combine(Root, "logs");
         Exports = Path.Combine(Root, "exports");
+        Captures = Path.Combine(Root, "captures");
+        CaptureTemp = Path.Combine(Root, "capture-temp");
         Settings = Path.Combine(Root, "settings.json");
     }
 
@@ -19,6 +21,8 @@ public sealed class AppPaths
     public string Scenarios { get; }
     public string Logs { get; }
     public string Exports { get; }
+    public string Captures { get; }
+    public string CaptureTemp { get; }
     public string Settings { get; }
 
     public void EnsureDirectories()
@@ -28,5 +32,7 @@ public sealed class AppPaths
         Directory.CreateDirectory(Scenarios);
         Directory.CreateDirectory(Logs);
         Directory.CreateDirectory(Exports);
+        Directory.CreateDirectory(Captures);
+        Directory.CreateDirectory(CaptureTemp);
     }
 }

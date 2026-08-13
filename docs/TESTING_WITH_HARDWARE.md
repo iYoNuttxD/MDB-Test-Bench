@@ -16,23 +16,26 @@ Package SHA-256: ____________________
 - [ ] Preserve a known-good recovery/power-down procedure.
 - [ ] Start with Structured hardware commands disabled; use Adapter Debug only with reviewed bytes.
 
-## Checklist and evidence
+## Discovery-first checklist and evidence
 
 | # | Check | Configuration / action | Observed result | Evidence | Status |
 |---|---|---|---|---|---|
-| 1 | Detect USB-RS232 | Refresh ports; record exact OS port name | ____________________ | ____________________ | ☐ |
-| 2 | Open port | Select the discovered port; Connect | ____________________ | ____________________ | ☐ |
-| 3 | Validate serial parameters | Test baud, data bits, parity, stop bits, timeout | ____________________ | ____________________ | ☐ |
-| 4 | Observe Wafer data | Capture untouched receive bytes and timestamps | ____________________ | ____________________ | ☐ |
-| 5 | Identify wire representation | Compare `BinaryBytes` versus `AsciiHex` | ____________________ | ____________________ | ☐ |
-| 6 | Confirm terminator/framing | Test None, CR, LF, CRLF; identify boundaries; determine whether Wafer expects the MDB checksum emitted by Core | ____________________ | ____________________ | ☐ |
-| 7 | Confirm POLL ownership | Compare AdapterManaged and HostManaged without duplicate polling | ____________________ | ____________________ | ☐ |
-| 8 | RESET | Record exact TX/RX, delay, and state change | ____________________ | ____________________ | ☐ |
-| 9 | SETUP | Record config and max/min price exchanges | ____________________ | ____________________ | ☐ |
-| 10 | ENABLE | Record exact response and idle behavior | ____________________ | ____________________ | ☐ |
-| 11 | Begin session | Record who initiates and all received fields | ____________________ | ____________________ | ☐ |
-| 12 | VEND REQUEST | Use controlled price/product; record approve/deny | ____________________ | ____________________ | ☐ |
-| 13 | Complete session | Record vend result, session complete, and end session | ____________________ | ____________________ | ☐ |
+| 1 | Open application | Confirm v0.1.1 and no automatic serial connection | ____________________ | ____________________ | ☐ |
+| 2 | Simulator sanity test | Run Discovery simulator start/marker/raw TX/stop/export/open | ____________________ | ____________________ | ☐ |
+| 3 | Connect USB-RS232 | Refresh and record exact OS port name | ____________________ | ____________________ | ☐ |
+| 4 | Select port | Do not open the normal workbench connection | ____________________ | ____________________ | ☐ |
+| 5 | Select initial settings | 9600 / 8 / N / 1, handshake None, AdapterManaged | ____________________ | ____________________ | ☐ |
+| 6 | Start capture | Wafer Discovery → Start Capture | ____________________ | ____________________ | ☐ |
+| 7 | Connect/power Wafer | Follow approved electrical/power sequence | ____________________ | ____________________ | ☐ |
+| 8 | Observe without TX | Preserve unsolicited read chunks and timing | ____________________ | ____________________ | ☐ |
+| 9 | Add marker | Record `Powered Wafer` and relevant observation | ____________________ | ____________________ | ☐ |
+| 10 | Observe cashless LED | Add a marker for each state change | ____________________ | ____________________ | ☐ |
+| 11 | Connect Zilog | Follow approved sequence; transmit nothing | ____________________ | ____________________ | ☐ |
+| 12 | Add marker | Record `Connected Zilog` | ____________________ | ____________________ | ☐ |
+| 13 | Observe traffic | Record chunks, gaps, lengths and errors | ____________________ | ____________________ | ☐ |
+| 14 | Reviewed probes only | Confirm each Raw Adapter TX; compare formats/terminators only with approval | ____________________ | ____________________ | ☐ |
+| 15 | Stop capture | Confirm automatic summary and size | ____________________ | ____________________ | ☐ |
+| 16 | Export for Analysis | Save/reopen `.mdbcap.json`; attach hash and preserve original | ____________________ | ____________________ | ☐ |
 
 ## Error observations
 
@@ -57,15 +60,19 @@ Do not implement a production codec until the evidence above is repeatable and r
 
 ## Exact execution order for the next lab session
 
-1. Verify the downloaded package hash and start the native package for the test computer.
-2. Confirm version `0.1.1`, Simulator selected, and no serial port opened.
-3. Run L1 Initialization in Simulator as a software preflight; export the session log.
-4. Power down and inspect pinout, voltage, ground, isolation, and cabling with the hardware owner.
-5. Connect USB-RS232, refresh ports, and record the exact discovered name and driver.
-6. Select Serial / Wafer and begin at 9600/8/N/1, AdapterManaged, BinaryBytes; do not use Structured mode.
-7. Connect and capture all unsolicited Wafer traffic with timestamps before transmitting.
-8. Send only reviewed Adapter Debug probes; compare BinaryBytes and AsciiHex with None, CR, LF, and CRLF.
-9. Determine and record frame boundaries, terminator, checksum/error rule, maximum response, and incomplete-response behavior.
-10. Compare AdapterManaged and HostManaged carefully; stop immediately if duplicate POLL traffic is observed.
-11. Only after the wire format is repeatable, record RESET, SETUP, ENABLE, begin session, VEND REQUEST, vend result, SESSION COMPLETE, and end-session exchanges.
-12. Reproduce each exchange, preserve raw logs/captures, and obtain review approval before implementing `IWaferProtocolCodec`.
+1. Open the application and confirm version `0.1.1`; no port should open.
+2. Select Simulator and complete the Wafer Discovery sanity flow: Start Capture, Add Marker, confirmed Raw TX, observe simulated RX chunks, Stop, Export for Analysis, Open Capture.
+3. Power down and inspect pinout, voltage, ground, isolation and cabling with the hardware owner.
+4. Connect USB-RS232, refresh ports and record the exact discovered name and driver.
+5. Select Serial / Wafer and begin at 9600/8/N/1, handshake None, AdapterManaged and BinaryBytes. Keep the normal workbench disconnected.
+6. Open Wafer Discovery and start capture.
+7. Connect/power the Wafer using the approved sequence.
+8. Observe traffic without transmitting.
+9. Add marker `Powered Wafer` and record visible state.
+10. Observe the cashless LED and add a marker for every relevant change.
+11. Connect the Zilog/cashless device using the approved sequence.
+12. Add marker `Connected Zilog`.
+13. Continue passive observation; do not interpret periodicity as proof of polling.
+14. Execute probes only after individual byte review and confirmation. Any BinaryBytes/AsciiHex or terminator comparison is a controlled experiment.
+15. Stop capture and review summary, errors and size.
+16. Export for Analysis, reopen the same `.mdbcap.json`, verify event/chunk counts, calculate a file hash, preserve the original and share it with the notes. Only then plan repeatable RESET/SETUP/ENABLE/vend experiments.

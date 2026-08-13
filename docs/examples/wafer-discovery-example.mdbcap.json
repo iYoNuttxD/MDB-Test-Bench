@@ -1,0 +1,65 @@
+{
+  "format": "MDBTestBenchCapture",
+  "formatVersion": 1,
+  "privacySafe": true,
+  "captureId": "example-2022061k5",
+  "application": { "name": "MDB Test Bench", "version": "0.1.1" },
+  "adapter": {
+    "model": "MDB-RS232 PC Adapter",
+    "printedRevision": "2022061K5",
+    "usbVendorId": null,
+    "usbProductId": null,
+    "manufacturer": null,
+    "product": null,
+    "serialNumber": null,
+    "driver": null
+  },
+  "host": { "operatingSystem": "Example OS", "osVersion": "Example", "architecture": "Arm64", "dotNetVersion": "10.0.0" },
+  "serial": {
+    "port": null,
+    "baudRate": 9600,
+    "dataBits": 8,
+    "parity": "None",
+    "stopBits": "One",
+    "handshake": "None",
+    "readTimeoutMilliseconds": 2000,
+    "writeTimeoutMilliseconds": 2000,
+    "pollingMode": "adapterManaged",
+    "wireFormat": "binaryBytes",
+    "terminator": "none"
+  },
+  "capture": {
+    "createdAtUtc": "2026-08-13T12:15:30+00:00",
+    "startedAtUtc": "2026-08-13T12:15:30+00:00",
+    "endedAtUtc": "2026-08-13T12:15:32+00:00",
+    "monotonicFrequency": 1000000000,
+    "resolutionNote": "Chunk timestamps use Stopwatch monotonic ticks at application read/write boundaries; per-byte arrival timing is unavailable from System.IO.Ports."
+  },
+  "userNotes": "Synthetic documentation example; not captured from hardware.",
+  "probes": [],
+  "statistics": {
+    "durationSeconds": 2,
+    "txEvents": 0,
+    "rxEvents": 2,
+    "txBytes": 0,
+    "rxBytes": 3,
+    "errors": 0,
+    "timeouts": 0,
+    "markers": 1,
+    "possibleMdbResponses": 0,
+    "unknownRawEvents": 2,
+    "mostCommonRxLengths": { "1": 1, "2": 1 },
+    "repeatedPrefixes": {},
+    "repeatedSuffixes": {},
+    "possibleCrDelimiter": false,
+    "possibleLfDelimiter": false,
+    "possibleCrLfDelimiter": false,
+    "trafficAppearance": "Binary-looking",
+    "periodicRxObservation": { "detected": false, "intervalCount": 1, "medianIntervalMilliseconds": 10, "minimumIntervalMilliseconds": 10, "maximumIntervalMilliseconds": 10, "classification": "Observation only; periodicity does not prove MDB POLL ownership." }
+  },
+  "events": [
+    { "sequence": 1, "type": "marker", "timestampUtc": "2026-08-13T12:15:31+00:00", "monotonicTimestamp": 1000000000, "deltaMicroseconds": null, "direction": null, "hex": null, "base64": null, "length": 0, "operation": "OperatorMarker", "readChunkIndex": null, "firstByteTimestampUtc": null, "lastByteTimestampUtc": null, "operationDurationMicroseconds": null, "gapFromPreviousRxMicroseconds": null, "interByteTimingMicroseconds": null, "transportState": null, "text": "Powered Wafer", "errorKind": null, "errorMessage": null, "possibleMdbInterpretation": null },
+    { "sequence": 2, "type": "raw", "timestampUtc": "2026-08-13T12:15:31.100000+00:00", "monotonicTimestamp": 1100000000, "deltaMicroseconds": 100000, "direction": "rx", "hex": "03", "base64": "Aw==", "length": 1, "operation": "SerialReadChunk", "readChunkIndex": 1, "firstByteTimestampUtc": null, "lastByteTimestampUtc": "2026-08-13T12:15:31.100000+00:00", "operationDurationMicroseconds": 100, "gapFromPreviousRxMicroseconds": null, "interByteTimingMicroseconds": null, "transportState": "Open", "text": null, "errorKind": null, "errorMessage": null, "possibleMdbInterpretation": { "description": "Single-byte response is neither ACK nor NAK.", "confidence": "unknown", "kind": null } },
+    { "sequence": 3, "type": "raw", "timestampUtc": "2026-08-13T12:15:31.110000+00:00", "monotonicTimestamp": 1110000000, "deltaMicroseconds": 10000, "direction": "rx", "hex": "FF FE", "base64": "//4=", "length": 2, "operation": "SerialReadChunk", "readChunkIndex": 2, "firstByteTimestampUtc": null, "lastByteTimestampUtc": "2026-08-13T12:15:31.110000+00:00", "operationDurationMicroseconds": 90, "gapFromPreviousRxMicroseconds": 10000, "interByteTimingMicroseconds": null, "transportState": "Open", "text": null, "errorKind": null, "errorMessage": null, "possibleMdbInterpretation": { "description": "MDB response checksum is invalid.", "confidence": "unknown", "kind": null } }
+  ]
+}
