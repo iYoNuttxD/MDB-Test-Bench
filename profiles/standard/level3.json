@@ -5,15 +5,21 @@
   "baseLevel": "Level3",
   "isBuiltIn": true,
   "capabilities": {
-    "expansion": "NotImplemented",
-    "revalue": "NotImplemented",
+    "expansion": "Supported",
+    "revalue": "Supported",
     "remoteVend": "NotImplemented",
     "multiCurrency": "NotImplemented",
-    "negativeVend": "Unsupported",
-    "dataEntry": "Unsupported",
-    "basket": "Unsupported",
-    "refund": "Unsupported",
-    "extensions": {}
+    "negativeVend": "NotImplemented",
+    "dataEntry": "NotImplemented",
+    "basket": "NotImplemented",
+    "refund": "NotImplemented",
+    "extensions": {
+      "ThirtyTwoBitMonetary": "Experimental",
+      "FileTransportLayer": "NotImplemented",
+      "Coupon": "NotImplemented",
+      "AskBeginSession": "NotImplemented",
+      "EnhancedItemNumberInformation": "NotImplemented"
+    }
   },
-  "metadata": { "status": "baseline; no unconfirmed feature is enabled" }
+  "metadata": { "status": "partial v0.1.1 codec; optional features require negotiation" }
 }

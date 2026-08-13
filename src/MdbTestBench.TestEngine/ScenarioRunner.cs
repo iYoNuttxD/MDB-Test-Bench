@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using MdbTestBench.Core.Logging;
 using MdbTestBench.Core.Protocol;
+using MdbTestBench.Core.Protocol.Commands;
 using MdbTestBench.Core.Protocol.Frames;
 using MdbTestBench.Core.Protocol.Encoding;
 using MdbTestBench.TestEngine.Models;
@@ -38,12 +39,7 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
             foreach (var step in scenario.Steps)
             {
                 var stepStopwatch = Stopwatch.StartNew();
-                var request = MdbFrame.CommandFrame(
-                    VmcAddress,
-                    CashlessAddress,
-                    step.Command,
-                    step.Subcommand,
-                    ParseHex(step.PayloadHex));
+                var request = BuildRequest(step, scenario.RequiredProfile);
 
                 await WriteLogAsync(request, "Scenario request", timeoutSource.Token);
                 try
@@ -129,5 +125,38 @@ public sealed class ScenarioRunner(IMdbTransport transport, IMdbLogSink? logSink
         var result = HexParser.Parse(value);
         if (!result.IsValid) throw new InvalidDataException(result.Error);
         return result.Bytes;
+    }
+
+    private static MdbFrame BuildRequest(TestStep step, MdbFeatureLevel featureLevel)
+    {
+        if (!string.IsNullOrWhiteSpace(step.PayloadHex))
+            return MdbFrame.CommandFrame(VmcAddress, CashlessAddress, step.Command, step.Subcommand,
+                ParseHex(step.PayloadHex));
+
+        var kind = (step.Command, step.Subcommand) switch
+        {
+            (MdbCommandType.Reset, _) => ManualCommandKind.Reset,
+            (MdbCommandType.Poll, _) => ManualCommandKind.WaitSession,
+            (MdbCommandType.Setup, MdbSubcommandType.SetupMaxMinPrices) => ManualCommandKind.SetupMaxMinPrices,
+            (MdbCommandType.Setup, _) => ManualCommandKind.SetupConfig,
+            (MdbCommandType.Reader, MdbSubcommandType.Enable) => ManualCommandKind.ReaderEnable,
+            (MdbCommandType.Reader, MdbSubcommandType.Disable) => ManualCommandKind.ReaderDisable,
+            (MdbCommandType.Reader, MdbSubcommandType.Cancel) => ManualCommandKind.ReaderCancel,
+            (MdbCommandType.Vend, MdbSubcommandType.VendRequest) => ManualCommandKind.VendRequest,
+            (MdbCommandType.Vend, MdbSubcommandType.VendCancel) => ManualCommandKind.VendCancel,
+            (MdbCommandType.Vend, MdbSubcommandType.VendSuccess) => ManualCommandKind.VendSuccess,
+            (MdbCommandType.Vend, MdbSubcommandType.VendFailure) => ManualCommandKind.VendFailure,
+            (MdbCommandType.Vend, MdbSubcommandType.SessionComplete) => ManualCommandKind.SessionComplete,
+            (MdbCommandType.Vend, MdbSubcommandType.CashSale) => ManualCommandKind.CashSale,
+            (MdbCommandType.Revalue, MdbSubcommandType.RevalueRequest) => ManualCommandKind.RevalueRequest,
+            (MdbCommandType.Revalue, MdbSubcommandType.RevalueLimitRequest) => ManualCommandKind.RevalueLimitRequest,
+            _ => throw new NotSupportedException($"Scenario command {step.Command}/{step.Subcommand} has no standard MDB encoder mapping.")
+        };
+        return ManualCommandBuilder.Build(new ManualCommandInput(
+            kind,
+            kind is ManualCommandKind.VendRequest or ManualCommandKind.CashSale ? 5.00m : null,
+            kind is ManualCommandKind.VendRequest or ManualCommandKind.VendSuccess or ManualCommandKind.CashSale ? 1 : null,
+            kind == ManualCommandKind.RevalueRequest ? 1.00m : null,
+            FeatureLevel: featureLevel)).Frame;
     }
 }

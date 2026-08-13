@@ -9,12 +9,15 @@
             <StackPanel Spacing="10">
               <TextBlock Classes="label" Text="SEMANTIC COMMAND" />
               <ComboBox ItemsSource="{Binding ManualCommandOptions}" SelectedItem="{Binding SelectedManualCommand}" />
+              <TextBlock Classes="label" Text="CASHLESS DEVICE" />
+              <ComboBox ItemsSource="{Binding CashlessDeviceOptions}" SelectedItem="{Binding SelectedCashlessDevice}" />
               <TextBlock Classes="label" Text="PRICE" />
               <TextBox Text="{Binding ManualPrice}" PlaceholderText="5.00" />
               <TextBlock Classes="label" Text="PRODUCT NUMBER" />
               <TextBox Text="{Binding ManualProduct}" PlaceholderText="0001" />
               <TextBlock Classes="label" Text="CURRENCY / VALUE" />
               <TextBox Text="{Binding ManualValue}" PlaceholderText="Optional" />
+              <TextBlock Text="Manual simulator values use scale factor 1 and 2 decimal places until Reader Config negotiation is wired to the session." Foreground="#93A1B5" TextWrapping="Wrap" />
               <Button Classes="primary" Content="Send structured command" Command="{Binding SendStructuredCommand}"
                       IsEnabled="{Binding CanUseStructured}" HorizontalAlignment="Stretch" />
               <TextBlock IsVisible="{Binding IsHardwareSelected}"
@@ -25,9 +28,9 @@
           <StackPanel Grid.Column="1" Spacing="16">
             <Border Classes="card">
               <StackPanel Spacing="10">
-                <TextBlock Classes="label" Text="LOGICAL PAYLOAD PREVIEW" />
+                <TextBlock Classes="label" Text="SEMANTIC + RAW MDB PREVIEW" />
                 <TextBlock Classes="mono" Text="{Binding ManualPreview}" TextWrapping="Wrap" FontSize="15" />
-                <TextBlock Text="This is a semantic preview. It is not Wafer wire framing." Foreground="#FFD166" />
+                <TextBlock Text="MDB bytes include the MDB checksum. They are not Wafer serial framing." Foreground="#FFD166" />
               </StackPanel>
             </Border>
             <Border Classes="card">
@@ -41,11 +44,11 @@
           </StackPanel>
         </Grid>
       </TabItem>
-      <TabItem Header="Advanced / Raw">
+      <TabItem Header="Advanced / Raw Adapter">
         <Border Classes="card" Margin="0,18,0,0" MaxWidth="850" HorizontalAlignment="Left">
           <StackPanel Spacing="12">
             <TextBlock Text="ADVANCED / ADAPTER DEBUG" Foreground="#FFD166" FontWeight="Bold" />
-            <TextBlock Text="Raw HEX is sent through the selected transport wire format. No MDB or Wafer framing is added."
+            <TextBlock Text="RAW ADAPTER / WAFER — these bytes are sent through the selected serial wire format. Raw MDB is shown separately in Structured preview. No Wafer framing is added."
                        TextWrapping="Wrap" Foreground="#93A1B5" />
             <TextBox Text="{Binding RawHex}" PlaceholderText="Example: 01 A0 FF" AcceptsReturn="True" MinHeight="90"
                      FontFamily="Menlo,Consolas,monospace" />

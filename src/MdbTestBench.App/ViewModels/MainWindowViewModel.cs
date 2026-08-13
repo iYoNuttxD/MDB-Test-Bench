@@ -8,6 +8,7 @@ using MdbTestBench.Core.Capabilities;
 using MdbTestBench.Core.Logging;
 using MdbTestBench.Core.Profiles;
 using MdbTestBench.Core.Protocol;
+using MdbTestBench.Core.Protocol.Cashless;
 using MdbTestBench.Core.Protocol.Commands;
 using MdbTestBench.Core.Protocol.Encoding;
 using MdbTestBench.TestEngine;
@@ -47,6 +48,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
     private string _lastCommand = "—";
     private string _lastResponse = "—";
     private ManualCommandKind _selectedManualCommand;
+    private MdbCashlessDevice _selectedCashlessDevice = MdbCashlessDevice.CashlessDevice1;
     private string _manualPrice = "5.00";
     private string _manualProduct = "1";
     private string _manualValue = string.Empty;
@@ -159,6 +161,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
     public IReadOnlyList<SerialWireFormat> WireFormatOptions { get; } = Enum.GetValues<SerialWireFormat>();
     public IReadOnlyList<AsciiHexTerminator> TerminatorOptions { get; } = Enum.GetValues<AsciiHexTerminator>();
     public IReadOnlyList<ManualCommandKind> ManualCommandOptions { get; } = Enum.GetValues<ManualCommandKind>();
+    public IReadOnlyList<MdbCashlessDevice> CashlessDeviceOptions { get; } = Enum.GetValues<MdbCashlessDevice>();
     public IReadOnlyList<MdbFeatureLevel> FeatureLevelOptions { get; } = Enum.GetValues<MdbFeatureLevel>();
     public IReadOnlyList<CapabilityStatus> CapabilityStatusOptions { get; } = Enum.GetValues<CapabilityStatus>();
 
@@ -270,6 +273,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         : "Unconfirmed";
 
     public ManualCommandKind SelectedManualCommand { get => _selectedManualCommand; set { if (SetProperty(ref _selectedManualCommand, value)) UpdateManualPreview(); } }
+    public MdbCashlessDevice SelectedCashlessDevice { get => _selectedCashlessDevice; set { if (SetProperty(ref _selectedCashlessDevice, value)) UpdateManualPreview(); } }
     public string ManualPrice { get => _manualPrice; set { if (SetProperty(ref _manualPrice, value)) UpdateManualPreview(); } }
     public string ManualProduct { get => _manualProduct; set { if (SetProperty(ref _manualProduct, value)) UpdateManualPreview(); } }
     public string ManualValue { get => _manualValue; set { if (SetProperty(ref _manualValue, value)) UpdateManualPreview(); } }
@@ -471,7 +475,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         try
         {
             var command = BuildManualCommand();
-            ManualPreview = $"{command.Frame.Command} {command.Frame.Subcommand} · {command.LogicalPayload}";
+            ManualPreview = $"{command.Frame.Command} {command.Frame.Subcommand}\n{command.LogicalPayload}\n\nMDB: {MdbLogFormatter.FormatHex(command.MdbBytes.Span)}";
         }
         catch (Exception exception) { ManualPreview = FriendlyError(exception); }
     }
@@ -480,7 +484,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IAsyncDisposable
         SelectedManualCommand,
         ParseNullableDecimal(ManualPrice),
         int.TryParse(ManualProduct, NumberStyles.Integer, CultureInfo.InvariantCulture, out var product) ? product : null,
-        ParseNullableDecimal(ManualValue)));
+        ParseNullableDecimal(ManualValue),
+        SelectedCashlessDevice,
+        SelectedProfile?.BaseLevel is MdbFeatureLevel.Level2 or MdbFeatureLevel.Level3
+            ? SelectedProfile.BaseLevel : MdbFeatureLevel.Level1));
 
     private static decimal? ParseNullableDecimal(string value) =>
         decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var result) ? result : null;

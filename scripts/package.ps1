@@ -4,7 +4,7 @@ param(
     [ValidateSet('win-x64', 'osx-arm64', 'osx-x64', 'linux-x64')]
     [string] $RuntimeIdentifier,
     [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$')]
-    [string] $Version = '0.1.0'
+    [string] $Version = '0.1.1'
 )
 
 $ErrorActionPreference = 'Stop'

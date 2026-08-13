@@ -13,6 +13,7 @@ public enum VmcTrigger
     ApproveVend,
     DenyVend,
     CancelVend,
+    FailVend,
     CompleteVend,
     CompleteSession,
     CancelSession,

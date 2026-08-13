@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RUNTIME_ID="${1:?usage: package.sh <win-x64|osx-arm64|osx-x64|linux-x64> [version]}"
-VERSION="${2:-0.1.0}"
+VERSION="${2:-0.1.1}"
 case "$RUNTIME_ID" in
   win-x64|osx-arm64|osx-x64|linux-x64) ;;
   *) echo "Unsupported runtime identifier: $RUNTIME_ID" >&2; exit 2 ;;

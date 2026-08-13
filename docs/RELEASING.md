@@ -1,6 +1,6 @@
 # Releasing MDB Test Bench
 
-Version `0.1.0` is defined centrally in `Directory.Build.props`. Creating packages is allowed during validation; creating or pushing the Git tag is a deliberate maintainer action.
+Version `0.1.1` is defined centrally in `Directory.Build.props`. Creating packages is allowed during validation; creating or pushing the Git tag is a deliberate maintainer action.
 
 ## Release preflight
 
@@ -20,25 +20,25 @@ Review `git status`, release notes, version metadata, and the Wafer limitations.
 On macOS or Linux, package one runtime at a time:
 
 ```bash
-./scripts/package.sh win-x64 0.1.0
-./scripts/package.sh osx-arm64 0.1.0
-./scripts/package.sh osx-x64 0.1.0
-./scripts/package.sh linux-x64 0.1.0
+./scripts/package.sh win-x64 0.1.1
+./scripts/package.sh osx-arm64 0.1.1
+./scripts/package.sh osx-x64 0.1.1
+./scripts/package.sh linux-x64 0.1.1
 ```
 
 On Windows PowerShell 7:
 
 ```powershell
-./scripts/package.ps1 -RuntimeIdentifier win-x64 -Version 0.1.0
+./scripts/package.ps1 -RuntimeIdentifier win-x64 -Version 0.1.1
 ```
 
 The scripts run `dotnet publish` as self-contained, single-file, untrimmed output and write disposable intermediates below `artifacts/publish` and `artifacts/staging`. Final packages are placed in `artifacts/packages`:
 
 ```text
-MDB-Test-Bench-v0.1.0-windows-x64.zip
-MDB-Test-Bench-v0.1.0-macos-arm64.zip
-MDB-Test-Bench-v0.1.0-macos-x64.zip
-MDB-Test-Bench-v0.1.0-linux-x64.tar.gz
+MDB-Test-Bench-v0.1.1-windows-x64.zip
+MDB-Test-Bench-v0.1.1-macos-arm64.zip
+MDB-Test-Bench-v0.1.1-macos-x64.zip
+MDB-Test-Bench-v0.1.1-linux-x64.tar.gz
 ```
 
 Cross-compilation verifies publication and binary architecture. A package's executable smoke test runs only when the target runtime is native to the current host; GitHub Actions supplies native Windows, macOS, and Linux runners.
@@ -84,8 +84,8 @@ The .NET runtime is included, but Avalonia still uses native desktop facilities.
 To publish after review:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 Do not run these commands until the exact commit is approved.

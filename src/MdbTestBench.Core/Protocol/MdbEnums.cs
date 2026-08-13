@@ -21,6 +21,7 @@ public enum MdbCommandType
     Poll,
     Reader,
     Vend,
+    Revalue,
     Expansion,
     Custom
 }
@@ -39,6 +40,10 @@ public enum MdbSubcommandType
     VendFailure,
     SessionComplete,
     CashSale,
+    RevalueRequest,
+    RevalueLimitRequest,
+    ExpansionRequestId,
+    ExpansionEnableOptions,
     Custom
 }
 
@@ -54,6 +59,13 @@ public enum MdbResponseType
     VendApproved,
     VendDenied,
     EndSession,
+    Cancelled,
+    PeripheralId,
+    Malfunction,
+    CommandOutOfSequence,
+    RevalueApproved,
+    RevalueDenied,
+    RevalueLimit,
     Data,
     NoResponse,
     Unknown

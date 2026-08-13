@@ -22,6 +22,8 @@ public sealed class SimulatedEndToEndTests
         Assert.Equal(TestRunStatus.Passed, result.Status);
         Assert.Equal(VmcState.Enabled, state);
         Assert.NotEmpty(logs.Snapshot());
+        Assert.All(logs.Snapshot().Where(entry => entry.Direction == MdbDirection.Tx),
+            entry => Assert.False(entry.RawData.IsEmpty));
     }
 
     [Fact]
@@ -104,7 +106,7 @@ public sealed class SimulatedEndToEndTests
             {
                 Name = "RESET",
                 Command = MdbCommandType.Reset,
-                ExpectedResponse = MdbResponseType.JustReset
+                ExpectedResponse = MdbResponseType.Ack
             }
         ]
     };

@@ -41,4 +41,33 @@ public sealed class VmcStateMachineTests
         Assert.Equal(VmcState.Disconnected, exception.State);
         Assert.Equal(VmcState.Disconnected, machine.State);
     }
+
+    [Fact]
+    public void VendCancelIsBlockedAfterApproval()
+    {
+        var machine = new VmcStateMachine();
+        foreach (var trigger in new[]
+                 {
+                     VmcTrigger.Connect, VmcTrigger.Reset, VmcTrigger.SetupComplete, VmcTrigger.Enable,
+                     VmcTrigger.BeginSession, VmcTrigger.RequestVend, VmcTrigger.ApproveVend
+                 })
+            machine.Fire(trigger);
+
+        Assert.False(machine.CanFire(VmcTrigger.CancelVend));
+        Assert.Throws<InvalidVmcTransitionException>(() => machine.Fire(VmcTrigger.CancelVend));
+    }
+
+    [Fact]
+    public void VendFailureRemainsValidAfterApproval()
+    {
+        var machine = new VmcStateMachine();
+        foreach (var trigger in new[]
+                 {
+                     VmcTrigger.Connect, VmcTrigger.Reset, VmcTrigger.SetupComplete, VmcTrigger.Enable,
+                     VmcTrigger.BeginSession, VmcTrigger.RequestVend, VmcTrigger.ApproveVend
+                 })
+            machine.Fire(trigger);
+
+        Assert.Equal(VmcState.SessionComplete, machine.Fire(VmcTrigger.FailVend));
+    }
 }

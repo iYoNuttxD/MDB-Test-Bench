@@ -5,7 +5,7 @@
   "baseLevel": "Level1",
   "isBuiltIn": true,
   "capabilities": {
-    "expansion": "Unsupported",
+    "expansion": "Supported",
     "revalue": "Unsupported",
     "remoteVend": "Unsupported",
     "multiCurrency": "Unsupported",
@@ -15,5 +15,5 @@
     "refund": "Unsupported",
     "extensions": {}
   },
-  "metadata": { "status": "baseline; validate against target hardware" }
+  "metadata": { "status": "v0.1.1 standard codec; validate target behavior" }
 }

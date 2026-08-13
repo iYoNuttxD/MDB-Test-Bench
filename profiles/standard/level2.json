@@ -5,8 +5,8 @@
   "baseLevel": "Level2",
   "isBuiltIn": true,
   "capabilities": {
-    "expansion": "NotImplemented",
-    "revalue": "Unsupported",
+    "expansion": "Supported",
+    "revalue": "Supported",
     "remoteVend": "Unsupported",
     "multiCurrency": "Unsupported",
     "negativeVend": "Unsupported",
@@ -15,5 +15,5 @@
     "refund": "Unsupported",
     "extensions": {}
   },
-  "metadata": { "status": "baseline; validate each capability" }
+  "metadata": { "status": "v0.1.1 Revalue and Expansion ID codec; remaining options independent" }
 }

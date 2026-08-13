@@ -29,7 +29,7 @@ public sealed class ScenarioRunnerTests
         {
             Id = "invalid",
             Name = "Invalid expectation",
-            Steps = [new TestStep { Name = "Reset", Command = MdbCommandType.Reset, ExpectedResponse = MdbResponseType.Ack }]
+            Steps = [new TestStep { Name = "Reset", Command = MdbCommandType.Reset, ExpectedResponse = MdbResponseType.JustReset }]
         };
 
         var result = await runner.RunAsync(scenario);
@@ -68,11 +68,13 @@ public sealed class ScenarioRunnerTests
         Name = "Basic approved vend",
         Steps =
         [
-            new() { Name = "Reset", Command = MdbCommandType.Reset, ExpectedResponse = MdbResponseType.JustReset },
+            new() { Name = "Reset", Command = MdbCommandType.Reset, ExpectedResponse = MdbResponseType.Ack },
+            new() { Name = "Poll just reset", Command = MdbCommandType.Poll, ExpectedResponse = MdbResponseType.JustReset },
             new() { Name = "Setup", Command = MdbCommandType.Setup, ExpectedResponse = MdbResponseType.ReaderConfigData },
             new() { Name = "Enable", Command = MdbCommandType.Reader, Subcommand = MdbSubcommandType.Enable, ExpectedResponse = MdbResponseType.Ack },
             new() { Name = "Begin session", Command = MdbCommandType.Poll, ExpectedResponse = MdbResponseType.BeginSession },
-            new() { Name = "Vend request", Command = MdbCommandType.Vend, Subcommand = MdbSubcommandType.VendRequest, ExpectedResponse = MdbResponseType.VendApproved },
+            new() { Name = "Vend request", Command = MdbCommandType.Vend, Subcommand = MdbSubcommandType.VendRequest, ExpectedResponse = MdbResponseType.Ack },
+            new() { Name = "Poll vend result", Command = MdbCommandType.Poll, ExpectedResponse = MdbResponseType.VendApproved },
             new() { Name = "Vend success", Command = MdbCommandType.Vend, Subcommand = MdbSubcommandType.VendSuccess, ExpectedResponse = MdbResponseType.Ack },
             new() { Name = "Session complete", Command = MdbCommandType.Vend, Subcommand = MdbSubcommandType.SessionComplete, ExpectedResponse = MdbResponseType.EndSession }
         ]

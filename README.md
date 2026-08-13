@@ -1,6 +1,6 @@
 # MDB Test Bench
 
-Cross-platform desktop application for exercising the VMC/master side of a cashless MDB test setup. Version `0.1.0` runs end-to-end with a deterministic simulator and provides a deliberately constrained serial diagnostic path for the reported Wafer MDB-RS232 revision `2022061K5`.
+Cross-platform desktop application for exercising the VMC/master side of a cashless MDB test setup. Version `0.1.1` includes an MDB/ICP 4.3 cashless encoder/decoder, runs end-to-end with a deterministic simulator, and provides a deliberately constrained serial diagnostic path for the reported Wafer MDB-RS232 revision `2022061K5`.
 
 The simulator is a development tool, not a statement of MDB conformance. The binary and ASCII HEX serial wire formats are experimental representations selected by the operator. No unknown Wafer byte, framing, checksum, response boundary, timing rule, or polling behavior is claimed or invented.
 
@@ -8,7 +8,9 @@ The simulator is a development tool, not a statement of MDB conformance. The bin
 
 - Avalonia MVVM UI with Dashboard, Manual, Automatic, Profiles, Logs, and Settings.
 - Explicit SIMULATION identity, connection lifecycle, and no automatic serial connection.
-- Structured simulator actions guarded by the VMC state machine.
+- Structured simulator actions guarded by the VMC state machine and encoded as deterministic MDB bytes.
+- Cashless Device #1/#2 addressing, MDB checksum, big-endian values, packed-BCD currency, and monetary scaling helpers.
+- Typed L1 cashless commands/responses, L2 Revalue, and capability-gated partial L3/Expansion support.
 - Advanced raw HEX validation with a 4,096-byte limit and explicit confirmation.
 - Cross-platform serial-port discovery; no port names are hardcoded.
 - Configurable serial parameters, polling ownership, timeout, binary bytes, ASCII HEX, and terminator.
@@ -22,7 +24,7 @@ The simulator is a development tool, not a statement of MDB conformance. The bin
 ```text
 src/
   MdbTestBench.App/          Avalonia views, ViewModels, composition, user persistence
-  MdbTestBench.Core/         Logical MDB model, profiles, state machine, HEX, logs
+  MdbTestBench.Core/         MDB/ICP encoder/decoder, logical model, profiles, state machine, HEX, logs
   MdbTestBench.Transport/    Serial, simulator, wire format, Wafer extension seam
   MdbTestBench.TestEngine/   Typed scenarios and asynchronous execution
 tests/
@@ -32,7 +34,14 @@ tests/
   MdbTestBench.App.Tests/
 ```
 
-`MdbTestBench.Core` depends on neither Avalonia nor `System.IO.Ports`. `IMdbTransport` separates logical exchange from its origin, and future structured hardware communication still requires an evidence-based `IWaferProtocolCodec`.
+`MdbTestBench.Core` depends on neither Avalonia nor `System.IO.Ports`. `IMdbCashlessEncoder` converts semantic operations into standard MDB blocks; `IMdbCashlessDecoder` produces typed responses while preserving unknown bytes. `IMdbTransport` separates logical exchange from its origin, and structured hardware communication still requires an evidence-based `IWaferProtocolCodec`.
+
+```text
+Semantic command -> MDB Cashless encoder -> MDB bytes -> IWaferProtocolCodec -> adapter
+Adapter -> IWaferProtocolCodec -> MDB bytes -> MDB Cashless decoder -> typed response
+```
+
+The Core representation includes the standard MDB checksum but not the physical mode/9th bit. Whether revision `2022061K5` expects the checksum in its host payload is still a Wafer codec decision that must be established from hardware evidence.
 
 ## Development
 
@@ -58,7 +67,7 @@ All automated tests are hardware-free:
 dotnet test MDBTestBench.sln --configuration Release --no-build
 ```
 
-The suite covers Core, state machine, profiles, JSON, manual commands, HEX limits, bounded logs, serial configuration and wire formats, simulator lifecycle and behaviors, timeouts, cancellation, scenario validation, and end-to-end `VmcSimulator + TestEngine + SimulatedCashlessTransport` flows.
+The suite covers MDB command addresses, encoder/decoder vectors, round trips, feature levels, values/checksum, Core, state machine, profiles, JSON, manual commands, HEX limits, bounded logs, serial configuration and wire formats, simulator lifecycle and behaviors, timeouts, cancellation, scenario validation, and end-to-end `VmcSimulator + TestEngine + SimulatedCashlessTransport` flows.
 
 ## Run
 
@@ -66,7 +75,7 @@ The suite covers Core, state machine, profiles, JSON, manual commands, HEX limit
 dotnet run --project src/MdbTestBench.App/MdbTestBench.App.csproj
 ```
 
-Start in Simulator, open Settings, and press Connect. For an approved flow use Automatic → L1 - Approved Vend, or execute Reset → Setup Config → Reader Enable → Wait Session → Vend Request → Vend Success → Session Complete in Manual.
+Start in Simulator, open Settings, and press Connect. For an approved flow use Automatic → L1 - Approved Vend, or, with the Normal simulator behavior, execute Reset → Wait Session/Poll (JUST RESET) → Setup Config → Reader Enable → Wait Session/Poll (BEGIN SESSION) → Vend Request (ACK) → Wait Session/Poll (VEND APPROVED) → Vend Success → Session Complete in Manual. Structured preview shows both semantic fields and the MDB bytes; it never labels those bytes as Wafer framing.
 
 The packaged executable supports a non-GUI distribution smoke test:
 
@@ -91,13 +100,13 @@ The reported adapter is Wafer MDB-RS232 revision `2022061K5`. Its host framing a
 
 ## Downloads / Releases
 
-A tag such as `v0.1.0` triggers the release workflow and creates:
+A tag such as `v0.1.1` triggers the release workflow and creates:
 
 ```text
-MDB-Test-Bench-v0.1.0-windows-x64.zip
-MDB-Test-Bench-v0.1.0-macos-arm64.zip
-MDB-Test-Bench-v0.1.0-macos-x64.zip
-MDB-Test-Bench-v0.1.0-linux-x64.tar.gz
+MDB-Test-Bench-v0.1.1-windows-x64.zip
+MDB-Test-Bench-v0.1.1-macos-arm64.zip
+MDB-Test-Bench-v0.1.1-macos-x64.zip
+MDB-Test-Bench-v0.1.1-linux-x64.tar.gz
 ```
 
 No tag or GitHub Release is created automatically during development. Local packaging and the complete release procedure are documented in [RELEASING.md](docs/RELEASING.md).
@@ -106,4 +115,4 @@ No tag or GitHub Release is created automatically during development. Local pack
 
 Settings, custom profiles, future custom scenarios, exports, and logs are stored below the operating system's per-user local application-data directory in `MdbTestBench/`. Invalid or oversized JSON falls back safely or is rejected. A saved serial name is selected only when currently discovered.
 
-Further reading: [architecture](docs/ARCHITECTURE.md), [hardware](docs/HARDWARE.md), [MDB scope](docs/MDB_SCOPE.md), and [Wafer integration](docs/WAFER_INTEGRATION.md).
+Further reading: [architecture](docs/ARCHITECTURE.md), [MDB reference](docs/MDB_REFERENCE.md), [implementation status](docs/MDB_IMPLEMENTATION_STATUS.md), [hardware](docs/HARDWARE.md), [MDB scope](docs/MDB_SCOPE.md), and [Wafer integration](docs/WAFER_INTEGRATION.md).

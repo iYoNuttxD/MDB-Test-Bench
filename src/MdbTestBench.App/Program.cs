@@ -1,5 +1,6 @@
 using Avalonia;
 using MdbTestBench.Core.Protocol;
+using MdbTestBench.Core.Protocol.Cashless;
 using MdbTestBench.Core.Protocol.Frames;
 using MdbTestBench.Transport.Configuration;
 using MdbTestBench.App.Services;
@@ -35,10 +36,18 @@ internal static class Program
             ResponseDelay = TimeSpan.Zero
         });
         await simulator.ConnectAsync();
-        var response = await simulator.ExchangeAsync(MdbFrame.CommandFrame(
+        var encoder = new MdbCashlessEncoder();
+        var destination = new MdbAddress(0x10, MdbDeviceType.CashlessDevice1);
+        var reset = await simulator.ExchangeAsync(MdbFrame.CommandFrame(
             MdbAddress.Vmc,
-            new MdbAddress(0x10, MdbDeviceType.CashlessDevice1),
-            MdbCommandType.Reset));
-        return response.Response == MdbResponseType.JustReset ? 0 : 1;
+            destination,
+            MdbCommandType.Reset,
+            payload: encoder.Encode(new MdbResetCommand())));
+        var poll = await simulator.ExchangeAsync(MdbFrame.CommandFrame(
+            MdbAddress.Vmc,
+            destination,
+            MdbCommandType.Poll,
+            payload: encoder.Encode(new MdbPollCommand())));
+        return reset.Response == MdbResponseType.Ack && poll.Response == MdbResponseType.JustReset ? 0 : 1;
     }
 }

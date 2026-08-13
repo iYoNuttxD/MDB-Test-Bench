@@ -28,7 +28,7 @@ public sealed class WorkbenchSessionTests
         var response = await exchange;
         await disconnect;
 
-        Assert.Equal(MdbResponseType.JustReset, response.Response);
+        Assert.Equal(MdbResponseType.Ack, response.Response);
         Assert.False(session.IsConnected);
         Assert.Equal("Disconnected", session.State);
     }
